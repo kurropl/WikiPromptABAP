@@ -7,71 +7,75 @@ const abapPrompts = {
     icon: "🔍",
     prompts: [
       {
-        title: "SELECT básico con WHERE",
-        description: "Selección básica de datos con condiciones",
-        code: `SELECT * FROM mara
-  INTO TABLE @DATA(lt_mara)
-  WHERE mtart = 'FERT'
-    AND created_on >= @sy-datum.`,
-        tags: ["SELECT", "WHERE", "INTERNAL TABLE"],
+        title: "SELECT básico optimizado",
+        description: "Prompt para generar consultas SELECT optimizadas con validaciones",
+        prompt: `Genera un SELECT en ABAP para obtener datos de [TABLA] con los siguientes requisitos:
+- Campos a seleccionar: [LISTA_CAMPOS]
+- Condiciones WHERE: [CONDICIONES]
+- Incluir validación de tabla interna no vacía
+- Agregar manejo de sy-subrc
+- Usar syntax moderno con @DATA y @
+- Incluir comentarios explicativos
+- Optimizar para performance`,
+        tags: ["SELECT", "Performance", "Validación"],
         developmentType: "nuevo",
         complexity: "básico"
       },
       {
-        title: "JOIN de tablas",
-        description: "Unión de múltiples tablas con INNER JOIN",
-        code: `SELECT m~matnr, m~mtart, t~maktx
-  FROM mara AS m
-  INNER JOIN makt AS t ON m~matnr = t~matnr
-  INTO TABLE @DATA(lt_material)
-  WHERE m~mtart = 'FERT'
-    AND t~spras = @sy-langu.`,
-        tags: ["JOIN", "INNER JOIN", "ALIAS"],
-        developmentType: "nuevo",
+        title: "JOIN de múltiples tablas",
+        description: "Prompt para crear JOINs complejos con múltiples tablas",
+        prompt: `Crea un JOIN en ABAP que combine las siguientes tablas:
+- Tabla principal: [TABLA_PRINCIPAL] con alias [ALIAS1]
+- Tablas secundarias: [TABLA2, TABLA3, etc.] con alias [ALIAS2, ALIAS3]
+- Tipo de JOIN: [INNER/LEFT/RIGHT]
+- Campos de unión: [CAMPOS_JOIN]
+- Condiciones WHERE específicas: [CONDICIONES]
+- Incluir validación de datos
+- Usar sintaxis moderna
+- Optimizar consulta para grandes volúmenes
+- Agregar manejo de errores`,
+        tags: ["JOIN", "Múltiples tablas", "Optimización"],
+        developmentType: "evolutivo",
         complexity: "intermedio"
       },
       {
-        title: "SELECT con manejo de errores",
-        description: "Consulta con validación y manejo de excepciones para correctivos",
-        code: `SELECT SINGLE * FROM mara
-  INTO @DATA(ls_mara)
-  WHERE matnr = @lv_material.
-
-IF sy-subrc <> 0.
-  MESSAGE e001(z_custom) WITH 'Material' lv_material 'not found'.
-  RETURN.
-ENDIF.
-
-" Validación adicional para correctivo
-IF ls_mara-lvorm = 'X'.
-  MESSAGE e002(z_custom) WITH 'Material' lv_material 'is deleted'.
-  RETURN.
-ENDIF.`,
-        tags: ["ERROR HANDLING", "VALIDATION", "MESSAGE"],
-        developmentType: "correctivo",
-        complexity: "intermedio"
-      },
-      {
-        title: "SELECT optimizado para performance",
-        description: "Consulta optimizada con índices y FOR ALL ENTRIES",
-        code: `" Verificar tabla no vacía antes de FOR ALL ENTRIES
-IF lt_vbeln IS NOT INITIAL.
-  
-  " Usar SELECT con campos específicos para optimizar
-  SELECT vbeln, posnr, matnr, kwmeng, netwr
-    FROM vbap
-    INTO TABLE @DATA(lt_items)
-    FOR ALL ENTRIES IN @lt_vbeln
-    WHERE vbeln = @lt_vbeln-vbeln
-      AND abgru = ''  " Solo ítems no rechazados
-    ORDER BY vbeln, posnr.
-    
-  " Usar SORT y READ TABLE para búsquedas eficientes
-  SORT lt_items BY vbeln posnr.
-  
-ENDIF.`,
-        tags: ["PERFORMANCE", "FOR ALL ENTRIES", "OPTIMIZATION"],
+        title: "FOR ALL ENTRIES optimizado",
+        description: "Prompt para generar FOR ALL ENTRIES con mejores prácticas",
+        prompt: `Genera código ABAP usando FOR ALL ENTRIES con estas especificaciones:
+- Tabla interna de entrada: [TABLA_INTERNA] 
+- Tabla base de datos: [TABLA_BD]
+- Campos a comparar: [CAMPOS_COMPARACION]
+- Incluir validación obligatoria de tabla interna no vacía
+- Implementar SORT y BINARY SEARCH para optimización
+- Agregar eliminación de duplicados si es necesario
+- Incluir manejo de límites de registros (máximo [NUMERO] registros)
+- Usar sintaxis moderna con @DATA
+- Agregar comentarios sobre mejores prácticas
+- Incluir alternativa con FILTER si aplica`,
+        tags: ["FOR ALL ENTRIES", "Performance", "Best Practices"],
         developmentType: "optimizacion",
+        complexity: "avanzado"
+      },
+      {
+        title: "Corrección de consulta lenta",
+        description: "Prompt para optimizar consultas existentes con problemas de performance",
+        prompt: `Analiza y optimiza esta consulta ABAP que tiene problemas de performance:
+
+[PEGAR_CONSULTA_EXISTENTE]
+
+Aplicar las siguientes optimizaciones:
+- Revisar uso de índices y sugerir mejoras
+- Optimizar condiciones WHERE (orden y especificidad)
+- Convertir a FOR ALL ENTRIES si usa loops anidados
+- Eliminar campos innecesarios del SELECT
+- Agregar SORT y BINARY SEARCH donde corresponda
+- Implementar buffering si es aplicable
+- Reducir accesos a base de datos
+- Incluir medición de performance con GET RUN TIME
+- Documentar cambios realizados
+- Proporcionar versión antes/después con explicación`,
+        tags: ["Optimización", "Performance Tuning", "Refactoring"],
+        developmentType: "correctivo",
         complexity: "avanzado"
       }
     ]
@@ -82,122 +86,84 @@ ENDIF.`,
     prompts: [
       {
         title: "CDS View básica",
-        description: "Estructura básica de una vista CDS para nuevo desarrollo",
-        code: `@AbapCatalog.viewEnhancementCategory: [#NONE]
-@AccessControl.authorizationCheck: #NOT_REQUIRED
-@EndUserText.label: 'Material Master Data'
-
-define view Z_I_MATERIAL_BASIC
-  as select from mara
-{
-  key mara.matnr as Material,
-      mara.mtart as MaterialType,
-      mara.mbrsh as IndustryStandard,
-      mara.meins as BaseUnit,
-      mara.created_on as CreatedOn
-}`,
-        tags: ["CDS", "@AbapCatalog", "@AccessControl"],
+        description: "Prompt para crear vista CDS fundamental",
+        prompt: `Crea una vista CDS básica con estas características:
+- Nombre de la vista: [NOMBRE_VISTA]
+- Tabla base: [TABLA_BASE]
+- Campos a exponer: [LISTA_CAMPOS]
+- Descripción: [DESCRIPCION]
+- Incluir anotaciones estándar (@AbapCatalog, @AccessControl, @EndUserText)
+- Agregar campos calculados si es necesario: [CALCULOS]
+- Incluir condiciones WHERE si aplica: [FILTROS]
+- Usar naming conventions para campos
+- Agregar comentarios explicativos
+- Seguir mejores prácticas SAP`,
+        tags: ["CDS", "Vista básica", "Anotaciones"],
         developmentType: "nuevo",
         complexity: "básico"
       },
       {
         title: "CDS con Associations",
-        description: "Vista CDS con asociaciones para desarrollo evolutivo",
-        code: `@AbapCatalog.viewEnhancementCategory: [#NONE]
-@AccessControl.authorizationCheck: #NOT_REQUIRED
-@EndUserText.label: 'Material with Enhanced Data'
-
-define view Z_I_MATERIAL_ENHANCED
-  as select from mara
-  association [1..*] to makt as _Text on mara.matnr = _Text.matnr
-  association [0..1] to marm as _UoM on mara.matnr = _UoM.matnr
-{
-  key mara.matnr as Material,
-      mara.mtart as MaterialType,
-      mara.meins as BaseUnit,
-      
-      // Campos añadidos en evolutivo
-      mara.bstme as PurchaseUnit,
-      mara.volum as Volume,
-      
-      // Associations
-      _Text,
-      _UoM
-}`,
-        tags: ["CDS", "Association", "Enhancement"],
+        description: "Prompt para crear vistas CDS con asociaciones complejas",
+        prompt: `Desarrolla una vista CDS con associations para:
+- Vista principal: [NOMBRE_VISTA] basada en [TABLA_PRINCIPAL]
+- Associations hacia: [TABLA_ASOCIADA1, TABLA_ASOCIADA2, etc.]
+- Cardinalidad de cada association: [1..1, 1..*, 0..1, etc.]
+- Condiciones de join: [CONDICIONES_JOIN]
+- Campos a exponer de cada tabla
+- Incluir associations transitivas si es necesario
+- Implementar text associations para descripciones
+- Agregar value help associations
+- Optimizar performance de associations
+- Usar alias descriptivos
+- Documentar relaciones entre entidades`,
+        tags: ["Associations", "Text associations", "Value Help"],
         developmentType: "evolutivo",
         complexity: "intermedio"
       },
       {
-        title: "CDS View con corrección de datos",
-        description: "Vista CDS con lógica para corregir datos inconsistentes",
-        code: `@AbapCatalog.viewEnhancementCategory: [#NONE]
-@AccessControl.authorizationCheck: #NOT_REQUIRED
-@EndUserText.label: 'Material Data Correction'
-
-define view Z_I_MATERIAL_CORRECTED
-  as select from mara
-{
-  key mara.matnr as Material,
-      mara.mtart as MaterialType,
-      
-      // Corrección: Si BaseUnit está vacío, usar EA como default
-      case 
-        when mara.meins = '' then 'EA'
-        else mara.meins
-      end as BaseUnit,
-      
-      // Corrección: Normalizar estado de material
-      case mara.lvorm
-        when 'X' then 'DELETED'
-        when ''  then 'ACTIVE'
-        else 'UNKNOWN'
-      end as MaterialStatus,
-      
-      mara.created_on as CreatedOn
-}
-where mara.matnr <> ''`,
-        tags: ["CDS", "Data Correction", "CASE", "Normalization"],
-        developmentType: "correctivo",
-        complexity: "intermedio"
+        title: "Analytical CDS View",
+        description: "Prompt para vistas analíticas con medidas y dimensiones",
+        prompt: `Crea una vista CDS analítica para reporting con:
+- Tipo: @Analytics.dataCategory: #CUBE
+- Tabla de hechos: [TABLA_HECHOS]
+- Dimensiones principales: [LISTA_DIMENSIONES]
+- Medidas a calcular: [LISTA_MEDIDAS]
+- Tipo de agregación para cada medida: [SUM, AVG, COUNT, etc.]
+- Jerarquías si aplica: [JERARQUIAS]
+- Filtros por defecto: [FILTROS_DEFAULT]
+- Incluir drill-down capabilities
+- Optimizar para grandes volúmenes de datos
+- Agregar currency/unit handling
+- Implementar authorization checks
+- Incluir time-based dimensions si es necesario
+- Documentar KPIs calculados`,
+        tags: ["Analytics", "KPI", "Reporting", "CUBE"],
+        developmentType: "nuevo",
+        complexity: "avanzado"
       },
       {
-        title: "Analytical CDS optimizada",
-        description: "Vista analítica optimizada para reporting de alto rendimiento",
-        code: `@Analytics.dataCategory: #CUBE
-@Analytics.internalName: #LOCAL
-@EndUserText.label: 'Optimized Sales Analytics'
+        title: "Corrección CDS con problemas",
+        description: "Prompt para identificar y corregir problemas en vistas CDS",
+        prompt: `Analiza y corrige esta vista CDS que presenta problemas:
 
-define view Z_C_SALES_ANALYTICS_OPT
-  as select from vbap as sales
-  association [1] to vbak as _Header on sales.vbeln = _Header.vbeln
-{
-  @Analytics.dimension: true
-  sales.vbeln as SalesDocument,
-  
-  @Analytics.dimension: true
-  _Header.kunnr as Customer,
-  
-  @Analytics.dimension: true
-  _Header.vkorg as SalesOrg,
-  
-  // Optimización: Pre-calcular indicadores
-  @Analytics.measure: true
-  @Aggregation.default: #SUM
-  sales.netwr as NetValue,
-  
-  @Analytics.measure: true
-  @Aggregation.default: #SUM
-  sales.kwmeng as Quantity,
-  
-  // Nuevo KPI calculado
-  @Analytics.measure: true
-  @Aggregation.default: #AVG
-  division( sales.netwr, sales.kwmeng, 2 ) as UnitPrice
-}
-where sales.abgru = ''  // Solo items no rechazados para performance`,
-        tags: ["@Analytics", "@Aggregation", "Performance", "KPI"],
-        developmentType: "optimizacion",
+[PEGAR_CDS_EXISTENTE]
+
+Identificar y corregir:
+- Errores de sintaxis o compilación
+- Problemas de performance (missing indexes, complex calculations)
+- Associations incorrectas o faltantes
+- Anotaciones faltantes o incorrectas
+- Authorization issues
+- Naming conventions
+- Data type inconsistencies
+- Missing translations
+- Currency/Unit handling
+- Memory consumption issues
+- Proporcionar versión corregida con explicación de cambios
+- Incluir mejores prácticas aplicadas`,
+        tags: ["Debugging", "Optimization", "Error Fixing"],
+        developmentType: "correctivo",
         complexity: "avanzado"
       }
     ]
@@ -207,154 +173,95 @@ where sales.abgru = ''  // Solo items no rechazados para performance`,
     icon: "🚀",
     prompts: [
       {
-        title: "Behavior Definition - Managed Básico",
-        description: "Definición de comportamiento básica para nuevo desarrollo RAP",
-        code: `managed implementation in class ZCL_BP_TRAVEL unique;
-strict ( 2 );
-with draft;
-
-define behavior for Z_I_TRAVEL alias Travel
-persistent table ZTRAVEL
-draft table ZTRAVELD
-etag master LocalLastChanged
-lock master total etag LastChanged
-authorization master( global )
-{
-  field ( readonly )
-   TravelId,
-   LocalCreatedBy,
-   LocalCreatedAt,
-   LocalLastChanged,
-   LastChanged;
-
-  field ( numbering : managed )
-   TravelId;
-
-  create;
-  update;
-  delete;
-
-  draft action Edit;
-  draft action Activate optimized;
-  draft action Discard;
-  draft action Resume;
-  draft determine action Prepare;
-
-  mapping for ZTRAVEL
-  {
-    TravelId = travel_id;
-    Description = description;
-  }
-}`,
-        tags: ["Behavior Definition", "managed", "draft", "basic"],
+        title: "Behavior Definition Managed",
+        description: "Prompt para crear definición de comportamiento RAP managed",
+        prompt: `Crea una Behavior Definition managed para:
+- Business Object: [NOMBRE_BO]
+- Tabla persistente: [TABLA_PERSISTENTE]
+- Tabla draft: [TABLA_DRAFT]
+- Campos readonly: [CAMPOS_READONLY]
+- Campos numbering managed: [CAMPOS_NUMERACION]
+- Operaciones CRUD: [create, update, delete según necesidad]
+- Include draft actions estándar
+- Determinations necesarias: [LISTA_DETERMINATIONS]
+- Validations requeridas: [LISTA_VALIDATIONS]
+- Actions personalizadas si aplica: [LISTA_ACTIONS]
+- Mapping de campos tabla/BO
+- Incluir etag y lock management
+- Agregar authorization master
+- Documentar cada sección`,
+        tags: ["Behavior Definition", "Managed", "CRUD", "Draft"],
         developmentType: "nuevo",
         complexity: "intermedio"
       },
       {
-        title: "RAP con Actions y Determinations",
-        description: "Behavior Definition avanzado con actions personalizadas",
-        code: `managed implementation in class ZCL_BP_TRAVEL_ENHANCED unique;
-strict ( 2 );
-with draft;
-
-define behavior for Z_I_TRAVEL_ENHANCED alias Travel
-persistent table ZTRAVEL
-draft table ZTRAVELD
-etag master LocalLastChanged
-lock master total etag LastChanged
-authorization master( global )
-{
-  field ( readonly )
-   TravelId,
-   TotalPrice,
-   LocalLastChanged;
-
-  field ( numbering : managed )
-   TravelId;
-
-  create;
-  update;
-  delete;
-
-  // Actions personalizadas
-  action acceptTravel result [1] $self;
-  action rejectTravel result [1] $self;
-  action calculateTotal result [1] $self;
-  
-  // Determinations
-  determination calculateTotalPrice on modify { field BookingFee, CurrencyCode; }
-  determination setTravelNumber on save { create; }
-  
-  // Validations
-  validation validateCustomer on save { field CustomerId; }
-  validation validateDates on save { field BeginDate, EndDate; }
-  validation validatePrice on save { field BookingFee; }
-
-  // Side effects para actualización automática
-  side effects
-  {
-    field BookingFee affects field TotalPrice;
-    field CurrencyCode affects field TotalPrice;
-  }
-
-  mapping for ZTRAVEL
-  {
-    TravelId = travel_id;
-    CustomerId = customer_id;
-    BeginDate = begin_date;
-    EndDate = end_date;
-    BookingFee = booking_fee;
-    TotalPrice = total_price;
-    CurrencyCode = currency_code;
-  }
-}`,
-        tags: ["Actions", "Determinations", "Validations", "Side Effects"],
+        title: "Service Definition y Binding",
+        description: "Prompt para crear servicio OData completo",
+        prompt: `Desarrolla un Service Definition y Binding para:
+- Nombre del servicio: [NOMBRE_SERVICIO]
+- Entities a exponer: [LISTA_ENTITIES]
+- Consumption views asociadas: [VISTAS_CONSUMO]
+- Tipo de binding: [OData V2/V4]
+- Authentication method: [AUTHENTICATION_TYPE]
+- Incluir projection views si es necesario
+- Configurar authorization checks
+- Implementar value helps
+- Agregar text associations
+- Configurar draft handling
+- Incluir custom actions si aplica
+- Optimizar para Fiori consumption
+- Documentar endpoints disponibles
+- Incluir testing recommendations`,
+        tags: ["Service Definition", "OData", "Fiori", "API"],
+        developmentType: "nuevo",
+        complexity: "intermedio"
+      },
+      {
+        title: "Metadata Extensions para Fiori",
+        description: "Prompt para crear anotaciones UI completas",
+        prompt: `Crea Metadata Extensions para vista [NOMBRE_VISTA] con:
+- Header information configurado
+- Facets structure: [ESTRUCTURA_FACETS]
+- Line items principales: [CAMPOS_LINEITEM]
+- Identification fields: [CAMPOS_IDENTIFICATION]
+- Field groups organization: [GRUPOS_CAMPOS]
+- Search helps configuration: [VALUE_HELPS]
+- Field criticality si aplica: [CAMPOS_CRITICALITY]
+- Actions en toolbar: [ACCIONES_TOOLBAR]
+- Responsive design considerations
+- Multi-language support
+- Field validation annotations
+- Quick filters setup
+- Export capabilities
+- Print functionality
+- Navigation properties
+- Incluir best practices para UX`,
+        tags: ["Metadata Extensions", "Fiori UI", "Annotations", "UX"],
         developmentType: "evolutivo",
         complexity: "avanzado"
       },
       {
-        title: "RAP Error Handling",
-        description: "Manejo de errores y mensajes en RAP para correctivos",
-        code: `CLASS lhc_travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
-  PRIVATE SECTION.
-    METHODS:
-      validateCustomer FOR VALIDATE ON SAVE
-        IMPORTING keys FOR Travel~validateCustomer,
-      validateDates FOR VALIDATE ON SAVE
-        IMPORTING keys FOR Travel~validateDates.
-ENDCLASS.
-
-CLASS lhc_travel IMPLEMENTATION.
-  METHOD validateCustomer.
-    READ ENTITIES OF z_i_travel_enhanced IN LOCAL MODE
-      ENTITY Travel
-        FIELDS ( CustomerId )
-        WITH CORRESPONDING #( keys )
-      RESULT DATA(travels).
-
-    LOOP AT travels INTO DATA(travel).
-      " Validar que cliente existe
-      SELECT SINGLE @abap_true FROM kna1
-        WHERE kunnr = @travel-CustomerId
-        INTO @DATA(customer_exists).
-        
-      IF customer_exists = abap_false.
-        APPEND VALUE #( %tky = travel-%tky
-                       %element-CustomerId = if_abap_behv=>mk-on ) 
-          TO failed-travel.
-          
-        APPEND VALUE #( %tky = travel-%tky
-                       %element-CustomerId = if_abap_behv=>mk-on
-                       %msg = new_message_with_text(
-                         severity = if_abap_behv_message=>severity-error
-                         text = |Customer { travel-CustomerId } does not exist| ) )
-          TO reported-travel.
-      ENDIF.
-    ENDLOOP.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Error Handling", "Validation", "Messages", "READ ENTITIES"],
-        developmentType: "correctivo",
+        title: "Implementation Class RAP",
+        description: "Prompt para clase de implementación con lógica de negocio",
+        prompt: `Genera Implementation Class para Behavior Definition con:
+- Nombre de la clase: [NOMBRE_CLASE]
+- Entity a implementar: [ENTITY_NAME]
+- Determinations a implementar: [LISTA_DETERMINATIONS]
+- Validations a implementar: [LISTA_VALIDATIONS]
+- Actions a implementar: [LISTA_ACTIONS]
+- Lógica de negocio específica: [DESCRIPCION_LOGICA]
+- Error handling robusto
+- Message handling con severity levels
+- Side effects implementation
+- Performance optimization
+- Unit tests structure
+- Authorization checks
+- Logging implementation
+- Transaction handling
+- Include exception scenarios
+- Documentar cada método con examples`,
+        tags: ["Implementation Class", "Business Logic", "Error Handling"],
+        developmentType: "nuevo",
         complexity: "avanzado"
       }
     ]
@@ -364,102 +271,75 @@ ENDCLASS.`,
     icon: "🌐",
     prompts: [
       {
-        title: "Service Definition básico",
-        description: "Definición de servicio OData para nuevo desarrollo Fiori",
-        code: `@EndUserText.label: 'Travel Service'
-define service Z_UI_TRAVEL_O4 {
-  expose Z_C_TRAVEL as Travel;
-  expose Z_C_BOOKING as Booking;
-  expose Z_I_CUSTOMER as Customer;
-  expose Z_I_AGENCY as TravelAgency;
-}`,
-        tags: ["Service Definition", "expose", "OData", "Fiori"],
+        title: "OData Service V4 básico",
+        description: "Prompt para crear servicio OData V4 desde cero",
+        prompt: `Crea un OData Service V4 completo para:
+- Nombre del servicio: [NOMBRE_SERVICIO]
+- Entidades principales: [LISTA_ENTIDADES]
+- Operaciones CRUD requeridas: [CREATE, READ, UPDATE, DELETE]
+- Filtros necesarios: [LISTA_FILTROS]
+- Ordenamiento por defecto: [CAMPOS_ORDEN]
+- Paginación configurada
+- Incluir $expand para navegaciones
+- Implementar $count functionality
+- Error handling estándar OData
+- Authentication y authorization
+- Cross-origin resource sharing (CORS)
+- API documentation annotations
+- Performance optimization
+- Caching strategies
+- Rate limiting si es necesario
+- Testing endpoints examples`,
+        tags: ["OData V4", "REST API", "CRUD", "Performance"],
         developmentType: "nuevo",
-        complexity: "básico"
-      },
-      {
-        title: "Service Binding con configuración",
-        description: "Binding de servicio con configuraciones específicas",
-        code: `" En Service Binding
-" Configuración de servicio con autenticación y autorización
-
-" Metadata Extensions para el servicio
-@Metadata.layer: #CUSTOMER
-@UI: {
-  headerInfo: {
-    typeName: 'Travel',
-    typeNamePlural: 'Travels',
-    title: {
-      type: #STANDARD,
-      value: 'TravelId'
-    },
-    description: {
-      type: #STANDARD,
-      value: 'Description'
-    }
-  }
-}
-
-annotate view Z_C_TRAVEL with
-{
-  @UI.facet: [ {
-    id: 'idGeneralInformation',
-    type: #COLLECTION,
-    label: 'General Information',
-    position: 10
-  }, {
-    id: 'idBookings',
-    type: #LINEITEM_REFERENCE,
-    label: 'Bookings',
-    position: 20,
-    targetElement: '_Booking'
-  } ]
-
-  @UI.lineItem: [ {
-    position: 10,
-    importance: #HIGH
-  } ]
-  TravelId;
-}`,
-        tags: ["Service Binding", "Metadata", "UI Annotations"],
-        developmentType: "evolutivo",
         complexity: "intermedio"
       },
       {
-        title: "OData con Custom Actions",
-        description: "Servicio OData con acciones personalizadas para funcionalidad específica",
-        code: `@EndUserText.label: 'Enhanced Travel Service'
-define service Z_UI_TRAVEL_ENHANCED_O4 {
-  expose Z_C_TRAVEL_ENHANCED as Travel
-  {
-    create;
-    update;
-    delete;
-    
-    // Custom Actions
-    action acceptTravel;
-    action rejectTravel;
-    action copyTravel returns Z_C_TRAVEL_ENHANCED;
-    
-    // Function Import
-    function calculatePrice returns TotalPrice;
-  }
-  
-  expose Z_C_BOOKING_ENHANCED as Booking
-  {
-    create;
-    update;
-    delete;
-    
-    // Association navigation
-    association _Travel;
-  }
-  
-  // Value Help entities
-  expose Z_I_CUSTOMER as Customer;
-  expose Z_I_CURRENCY as Currency;
-}`,
-        tags: ["Custom Actions", "Function Import", "Association", "Value Help"],
+        title: "Custom Actions en OData",
+        description: "Prompt para implementar acciones personalizadas",
+        prompt: `Implementa Custom Actions en OData service para:
+- Servicio base: [NOMBRE_SERVICIO]
+- Actions a crear: [LISTA_ACTIONS]
+- Parámetros de entrada para cada action: [PARAMETROS_ENTRADA]
+- Valores de retorno: [TIPOS_RETORNO]
+- Validaciones de entrada requeridas
+- Business logic a implementar: [DESCRIPCION_LOGICA]
+- Error scenarios y messages
+- Authorization checks específicos
+- Transactional behavior
+- Idempotency considerations
+- Audit logging
+- Performance monitoring
+- Integration with workflow si aplica
+- Testing scenarios
+- Documentation para consumers
+- Versioning strategy`,
+        tags: ["Custom Actions", "Business Logic", "Transaction", "Security"],
+        developmentType: "evolutivo",
+        complexity: "avanzado"
+      },
+      {
+        title: "OData con Deep Insert",
+        description: "Prompt para operaciones complejas con entidades relacionadas",
+        prompt: `Implementa Deep Insert functionality para:
+- Entidad principal: [ENTIDAD_PRINCIPAL]
+- Entidades relacionadas: [ENTIDADES_RELACIONADAS]
+- Relaciones entre entidades: [TIPO_RELACIONES]
+- Validaciones cross-entity
+- Transaction scope management
+- Rollback scenarios
+- Batch processing support
+- Error handling granular
+- Optimistic locking
+- Authorization checks por entity
+- Audit trail implementation
+- Performance optimization para bulk operations
+- Memory management
+- Progress tracking
+- Recovery mechanisms
+- Testing complex scenarios
+- Integration patterns`,
+        tags: ["Deep Insert", "Batch", "Transaction", "Complex Operations"],
         developmentType: "evolutivo",
         complexity: "avanzado"
       }
@@ -471,179 +351,76 @@ define service Z_UI_TRAVEL_ENHANCED_O4 {
     prompts: [
       {
         title: "Business Workflow básico",
-        description: "Configuración básica de workflow para aprobaciones",
-        code: `" Clase de workflow
-CLASS zcl_workflow_travel DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES: if_workflow.
-    
-    METHODS: constructor
-      IMPORTING
-        iv_travel_id TYPE z_travel_id,
-      
-      start_approval_process
-        RETURNING
-          VALUE(rv_workitem_id) TYPE sww_wiid,
-          
-      complete_approval
-        IMPORTING
-          iv_approved TYPE abap_bool
-          iv_comments TYPE string OPTIONAL.
-
-  PRIVATE SECTION.
-    DATA: mv_travel_id TYPE z_travel_id.
-ENDCLASS.
-
-CLASS zcl_workflow_travel IMPLEMENTATION.
-  METHOD start_approval_process.
-    " Iniciar workflow de aprobación
-    DATA: lo_workflow TYPE REF TO cl_swf_run_wf_engine.
-    
-    CREATE OBJECT lo_workflow.
-    
-    " Parámetros del workflow
-    DATA(lt_parameters) = VALUE swfparameters(
-      ( name = 'TravelId' value = mv_travel_id )
-      ( name = 'Requester' value = sy-uname )
-    ).
-    
-    " Iniciar workflow
-    CALL METHOD lo_workflow->start_workflow
-      EXPORTING
-        wi_id = 'WS99900001'  " Template de workflow
-        parameters = lt_parameters
-      RECEIVING
-        workitem_id = rv_workitem_id.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Workflow", "Approval", "Business Process"],
+        description: "Prompt para crear workflow de aprobación estándar",
+        prompt: `Crea un Business Workflow para proceso de aprobación con:
+- Nombre del workflow: [NOMBRE_WORKFLOW]
+- Objeto de negocio: [BUSINESS_OBJECT]
+- Pasos del proceso: [LISTA_PASOS]
+- Roles de aprobación: [ROLES_USUARIOS]
+- Criterios de escalación: [CRITERIOS_ESCALACION]
+- Timeouts y deadlines: [TIEMPOS_LIMITE]
+- Notificaciones por email/portal
+- Decision points y routing logic
+- Parallel processing si es necesario
+- Exception handling
+- Audit trail completo
+- Status tracking
+- Restart capability
+- Integration con SAP Inbox
+- Mobile support considerations
+- Reporting de performance
+- Testing scenarios`,
+        tags: ["Workflow", "Approval", "Business Process", "Automation"],
         developmentType: "nuevo",
-        complexity: "avanzado"
+        complexity: "intermedio"
       },
       {
         title: "Event-based Workflow",
-        description: "Workflow basado en eventos para automatización de procesos",
-        code: `" Event handler para workflow automático
-CLASS zcl_travel_event_handler DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    CLASS-METHODS: handle_travel_created
-      FOR EVENT travel_created OF zcl_travel_manager
-      IMPORTING
-        sender
-        travel_id
-        total_amount.
-
-  PRIVATE SECTION.
-    CLASS-METHODS: trigger_approval_workflow
-      IMPORTING
-        iv_travel_id TYPE z_travel_id
-        iv_amount TYPE z_amount.
-ENDCLASS.
-
-CLASS zcl_travel_event_handler IMPLEMENTATION.
-  METHOD handle_travel_created.
-    " Determinar si requiere aprobación
-    IF total_amount > 1000.
-      trigger_approval_workflow( 
-        iv_travel_id = travel_id
-        iv_amount = total_amount ).
-    ENDIF.
-  ENDMETHOD.
-  
-  METHOD trigger_approval_workflow.
-    " Crear workitem automáticamente
-    DATA(lo_workflow) = NEW zcl_workflow_travel( iv_travel_id ).
-    DATA(lv_workitem) = lo_workflow->start_approval_process( ).
-    
-    " Log del proceso
-    MESSAGE i001(z_workflow) WITH 'Approval workflow started' lv_workitem.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Event Handler", "Automatic Workflow", "Business Rules"],
+        description: "Prompt para workflow automático basado en eventos",
+        prompt: `Implementa Event-based Workflow para:
+- Evento disparador: [TIPO_EVENTO]
+- Condiciones de activación: [CONDICIONES]
+- Objeto de negocio afectado: [BUSINESS_OBJECT]
+- Acciones automáticas a ejecutar: [LISTA_ACCIONES]
+- Reglas de negocio: [REGLAS_NEGOCIO]
+- Integration points: [SISTEMAS_INTEGRADOS]
+- Error recovery mechanisms
+- Retry logic con backoff strategy
+- Monitoring y alerting
+- Performance optimization
+- Scalability considerations
+- Security y authorization
+- Logging detallado
+- Configuration management
+- Testing automation
+- Documentation completa
+- Maintenance procedures`,
+        tags: ["Event-driven", "Automation", "Integration", "Monitoring"],
         developmentType: "evolutivo",
         complexity: "avanzado"
       },
       {
         title: "Workflow Error Recovery",
-        description: "Manejo de errores y recuperación en workflows para correctivos",
-        code: `" Clase para manejo de errores en workflow
-CLASS zcl_workflow_error_handler DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    METHODS: handle_workflow_error
-      IMPORTING
-        iv_workitem_id TYPE sww_wiid
-        iv_error_code TYPE sy-msgno
-        iv_error_message TYPE string,
-        
-      retry_failed_workitem
-        IMPORTING
-          iv_workitem_id TYPE sww_wiid
-        RETURNING
-          VALUE(rv_success) TYPE abap_bool,
-          
-      cancel_workflow
-        IMPORTING
-          iv_workitem_id TYPE sww_wiid
-          iv_reason TYPE string.
-
-  PRIVATE SECTION.
-    METHODS: log_error
-      IMPORTING
-        iv_workitem_id TYPE sww_wiid
-        iv_message TYPE string.
-ENDCLASS.
-
-CLASS zcl_workflow_error_handler IMPLEMENTATION.
-  METHOD handle_workflow_error.
-    " Log del error
-    log_error( 
-      iv_workitem_id = iv_workitem_id
-      iv_message = |Error { iv_error_code }: { iv_error_message }| ).
-    
-    " Intentar recuperación automática
-    IF iv_error_code = '001'.  " Error recoverable
-      DATA(lv_retry_success) = retry_failed_workitem( iv_workitem_id ).
-      IF lv_retry_success = abap_false.
-        " Escalar a administrador
-        MESSAGE i002(z_workflow) WITH 'Workflow escalated to admin' iv_workitem_id.
-      ENDIF.
-    ELSE.
-      " Error crítico - cancelar workflow
-      cancel_workflow( 
-        iv_workitem_id = iv_workitem_id
-        iv_reason = iv_error_message ).
-    ENDIF.
-  ENDMETHOD.
-  
-  METHOD retry_failed_workitem.
-    " Implementar lógica de retry
-    TRY.
-        " Reintentar operación
-        DATA(lo_workitem) = cl_swf_run_wf_engine=>get_instance( iv_workitem_id ).
-        lo_workitem->restart( ).
-        rv_success = abap_true.
-        
-      CATCH cx_swf_run_wf_base INTO DATA(lx_error).
-        rv_success = abap_false.
-        log_error( 
-          iv_workitem_id = iv_workitem_id
-          iv_message = lx_error->get_text( ) ).
-    ENDTRY.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Error Handling", "Recovery", "Workflow Admin", "Exception"],
+        description: "Prompt para manejo robusto de errores en workflows",
+        prompt: `Desarrolla sistema de Error Recovery para workflows con:
+- Tipos de errores a manejar: [TIPOS_ERRORES]
+- Estrategias de retry: [ESTRATEGIAS_RETRY]
+- Escalation procedures: [PROCEDIMIENTOS_ESCALACION]
+- Rollback mechanisms: [MECANISMOS_ROLLBACK]
+- Notification systems: [SISTEMAS_NOTIFICACION]
+- Error categorization y priority
+- Automatic vs manual recovery
+- Data consistency checks
+- Compensation actions
+- Dead letter queue handling
+- Monitoring dashboards
+- Root cause analysis tools
+- Performance impact analysis
+- Documentation de troubleshooting
+- Prevention mechanisms
+- Testing error scenarios
+- Recovery time objectives`,
+        tags: ["Error Handling", "Recovery", "Monitoring", "Resilience"],
         developmentType: "correctivo",
         complexity: "avanzado"
       }
@@ -654,217 +431,75 @@ ENDCLASS.`,
     icon: "🗄️",
     prompts: [
       {
-        title: "AMDP básico",
-        description: "Procedimiento AMDP básico para optimización de consultas",
-        code: `CLASS zcl_amdp_material_data DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES: if_amdp_marker_hdb.
-    
-    CLASS-METHODS: get_material_hierarchy
-      IMPORTING
-        VALUE(iv_plant) TYPE werks_d
-        VALUE(iv_material_type) TYPE mtart
-      EXPORTING
-        VALUE(et_result) TYPE ztt_material_hierarchy.
-
-ENDCLASS.
-
-CLASS zcl_amdp_material_data IMPLEMENTATION.
-  METHOD get_material_hierarchy
-    BY DATABASE PROCEDURE
-    FOR HDB
-    LANGUAGE SQLSCRIPT
-    OPTIONS READ-ONLY
-    USING mara marm marc.
-    
-    -- Consulta optimizada en HANA
-    et_result = 
-      SELECT m.matnr as material,
-             m.mtart as material_type,
-             m.meins as base_unit,
-             c.werks as plant,
-             c.dismm as mrp_type,
-             u.meinh as alt_unit,
-             u.umrez as numerator,
-             u.umren as denominator
-      FROM mara as m
-      LEFT JOIN marc as c ON m.matnr = c.matnr
-      LEFT JOIN marm as u ON m.matnr = u.matnr
-      WHERE c.werks = :iv_plant
-        AND m.mtart = :iv_material_type
-        AND m.lvorm = ''
-      ORDER BY m.matnr, u.meinh;
-      
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["AMDP", "SQLSCRIPT", "HANA", "Performance"],
+        title: "AMDP básico para optimización",
+        description: "Prompt para crear procedimiento AMDP simple",
+        prompt: `Crea un AMDP básico para optimizar consulta con:
+- Nombre de la clase: [NOMBRE_CLASE_AMDP]
+- Método principal: [NOMBRE_METODO]
+- Tablas de entrada: [TABLAS_INPUT]
+- Parámetros de entrada: [PARAMETROS_ENTRADA]
+- Resultado esperado: [ESTRUCTURA_RESULTADO]
+- Lógica SQL específica: [DESCRIPCION_LOGICA]
+- Optimizaciones HANA específicas
+- Error handling en SQLScript
+- Performance monitoring
+- Memory optimization
+- Parallel processing hints
+- Index usage optimization
+- Comentarios explicativos
+- Testing approach
+- Comparison con ABAP equivalente
+- Maintenance considerations`,
+        tags: ["AMDP", "SQLScript", "Performance", "HANA"],
         developmentType: "optimizacion",
-        complexity: "avanzado"
+        complexity: "intermedio"
       },
       {
-        title: "AMDP con Table Functions",
-        description: "Function AMDP para cálculos complejos en HANA",
-        code: `CLASS zcl_amdp_analytics DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES: if_amdp_marker_hdb.
-    
-    CLASS-METHODS: calculate_sales_metrics
-      IMPORTING
-        VALUE(iv_from_date) TYPE dats
-        VALUE(iv_to_date) TYPE dats
-        VALUE(iv_sales_org) TYPE vkorg
-      RETURNING
-        VALUE(rt_metrics) TYPE ztt_sales_metrics.
-
-ENDCLASS.
-
-CLASS zcl_amdp_analytics IMPLEMENTATION.
-  METHOD calculate_sales_metrics
-    BY DATABASE FUNCTION
-    FOR HDB
-    LANGUAGE SQLSCRIPT
-    OPTIONS READ-ONLY
-    USING vbak vbap knvv.
-    
-    -- Variables locales
-    DECLARE lv_current_period INT;
-    DECLARE lv_previous_period INT;
-    
-    -- Calcular períodos
-    lv_current_period := YEAR(:iv_to_date) * 100 + MONTH(:iv_to_date);
-    lv_previous_period := CASE 
-      WHEN MONTH(:iv_to_date) = 1 
-      THEN (YEAR(:iv_to_date) - 1) * 100 + 12
-      ELSE YEAR(:iv_to_date) * 100 + (MONTH(:iv_to_date) - 1)
-    END;
-    
-    -- Métricas actuales
-    current_sales = 
-      SELECT h.kunnr as customer,
-             SUM(i.netwr) as current_revenue,
-             COUNT(DISTINCT h.vbeln) as current_orders,
-             AVG(i.netwr) as avg_order_value
-      FROM vbak as h
-      INNER JOIN vbap as i ON h.vbeln = i.vbeln
-      WHERE h.vkorg = :iv_sales_org
-        AND h.erdat BETWEEN :iv_from_date AND :iv_to_date
-      GROUP BY h.kunnr;
-    
-    -- Comparación con período anterior
-    return 
-      SELECT c.customer,
-             c.current_revenue,
-             c.current_orders,
-             c.avg_order_value,
-             -- Cálculo de growth rate
-             CASE 
-               WHEN LAG(c.current_revenue) OVER (PARTITION BY c.customer ORDER BY lv_current_period) > 0
-               THEN ((c.current_revenue - LAG(c.current_revenue) OVER (PARTITION BY c.customer ORDER BY lv_current_period)) / 
-                     LAG(c.current_revenue) OVER (PARTITION BY c.customer ORDER BY lv_current_period)) * 100
-               ELSE 0
-             END as growth_rate
-      FROM :current_sales as c;
-      
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Table Functions", "Analytics", "Window Functions", "Complex Calculations"],
+        title: "AMDP Table Function",
+        description: "Prompt para función AMDP compleja con cálculos",
+        prompt: `Desarrolla AMDP Table Function para cálculos complejos:
+- Nombre de la función: [NOMBRE_FUNCION]
+- Parámetros de entrada: [PARAMETROS]
+- Tablas base involucradas: [TABLAS_BASE]
+- Cálculos a realizar: [DESCRIPCION_CALCULOS]
+- Agregaciones necesarias: [AGREGACIONES]
+- Window functions requeridas: [WINDOW_FUNCTIONS]
+- Filtros dinámicos: [FILTROS_DINAMICOS]
+- Performance requirements: [REQUISITOS_PERFORMANCE]
+- Memory constraints: [LIMITACIONES_MEMORIA]
+- Parallel execution strategy
+- Error scenarios handling
+- Result set optimization
+- Caching opportunities
+- Integration con CDS Views
+- Testing complex scenarios
+- Documentation completa`,
+        tags: ["Table Function", "Complex Calculations", "Window Functions"],
         developmentType: "nuevo",
         complexity: "avanzado"
       },
       {
-        title: "AMDP Error Handling",
-        description: "AMDP con manejo de errores y validaciones",
-        code: `CLASS zcl_amdp_robust DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES: if_amdp_marker_hdb.
-    
-    CLASS-METHODS: process_financial_data
-      IMPORTING
-        VALUE(iv_company_code) TYPE bukrs
-        VALUE(iv_fiscal_year) TYPE gjahr
-      EXPORTING
-        VALUE(et_result) TYPE ztt_financial_data
-        VALUE(et_errors) TYPE ztt_error_log.
-
-ENDCLASS.
-
-CLASS zcl_amdp_robust IMPLEMENTATION.
-  METHOD process_financial_data
-    BY DATABASE PROCEDURE
-    FOR HDB
-    LANGUAGE SQLSCRIPT
-    OPTIONS READ-ONLY
-    USING bkpf bseg t001.
-    
-    -- Declarar handler de excepciones
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-      et_errors = SELECT 
-        'AMDP_ERROR' as error_type,
-        ::SQL_ERROR_CODE as error_code,
-        ::SQL_ERROR_MESSAGE as error_message,
-        CURRENT_TIMESTAMP as error_timestamp
-      FROM DUMMY;
-      RETURN;
-    END;
-    
-    -- Validar parámetros de entrada
-    SELECT COUNT(*) INTO lv_company_exists 
-    FROM t001 
-    WHERE bukrs = :iv_company_code;
-    
-    IF :lv_company_exists = 0 THEN
-      et_errors = SELECT 
-        'VALIDATION_ERROR' as error_type,
-        '001' as error_code,
-        'Company code does not exist: ' || :iv_company_code as error_message,
-        CURRENT_TIMESTAMP as error_timestamp
-      FROM DUMMY;
-      RETURN;
-    END IF;
-    
-    -- Procesamiento principal con validaciones
-    et_result = 
-      SELECT h.bukrs as company_code,
-             h.gjahr as fiscal_year,
-             h.belnr as document_number,
-             i.buzei as line_item,
-             i.hkont as gl_account,
-             i.dmbtr as amount_local,
-             i.wrbtr as amount_document,
-             -- Validación de datos
-             CASE 
-               WHEN i.dmbtr = 0 THEN 'ZERO_AMOUNT'
-               WHEN i.hkont = '' THEN 'MISSING_ACCOUNT'
-               ELSE 'OK'
-             END as data_quality
-      FROM bkpf as h
-      INNER JOIN bseg as i ON h.mandt = i.mandt 
-                          AND h.bukrs = i.bukrs 
-                          AND h.belnr = i.belnr 
-                          AND h.gjahr = i.gjahr
-      WHERE h.bukrs = :iv_company_code
-        AND h.gjahr = :iv_fiscal_year
-        -- Filtros adicionales para calidad de datos
-        AND h.stblg = ''  -- No es documento de reversa
-        AND i.koart IN ('S', 'K', 'D')  -- Solo cuentas principales
-      ORDER BY h.belnr, i.buzei;
-      
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Error Handling", "Data Validation", "Robust Processing"],
+        title: "AMDP con Error Handling",
+        description: "Prompt para AMDP robusto con manejo de errores",
+        prompt: `Implementa AMDP con manejo robusto de errores para:
+- Procedimiento base: [NOMBRE_PROCEDIMIENTO]
+- Escenarios de error esperados: [ESCENARIOS_ERROR]
+- Validaciones de entrada: [VALIDACIONES]
+- Rollback procedures: [PROCEDIMIENTOS_ROLLBACK]
+- Logging mechanisms: [MECANISMOS_LOG]
+- Exception handling patterns
+- Data consistency checks
+- Performance degradation detection
+- Memory overflow protection
+- Timeout handling
+- Resource cleanup procedures
+- Error notification systems
+- Recovery mechanisms
+- Diagnostic information collection
+- Testing error scenarios
+- Monitoring integration
+- Documentation de troubleshooting`,
+        tags: ["Error Handling", "Robustness", "Monitoring", "Diagnostics"],
         developmentType: "correctivo",
         complexity: "avanzado"
       }
@@ -875,122 +510,82 @@ ENDCLASS.`,
     icon: "📋",
     prompts: [
       {
-        title: "ALV Grid Display",
-        description: "Mostrar datos en formato grid ALV para reportes básicos",
-        code: `DATA: lo_alv TYPE REF TO cl_gui_alv_grid,
-      lo_container TYPE REF TO cl_gui_container.
-
-CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
-  EXPORTING
-    i_callback_program       = sy-repid
-    i_callback_pf_status_set = 'SET_PF_STATUS'
-    i_callback_user_command  = 'USER_COMMAND'
-    i_grid_title            = 'Material Master Data'
-    is_layout               = ls_layout
-    it_fieldcat             = lt_fieldcat
-    it_sort                 = lt_sort
-  TABLES
-    t_outtab                = lt_material
-  EXCEPTIONS
-    program_error           = 1
-    OTHERS                  = 2.`,
-        tags: ["ALV", "REUSE_ALV_GRID_DISPLAY", "fieldcat"],
+        title: "ALV Grid moderno",
+        description: "Prompt para reporte ALV con funcionalidades completas",
+        prompt: `Crea un reporte ALV moderno con:
+- Nombre del programa: [NOMBRE_PROGRAMA]
+- Datos a mostrar: [DESCRIPCION_DATOS]
+- Tabla/vista fuente: [FUENTE_DATOS]
+- Campos en el ALV: [LISTA_CAMPOS]
+- Filtros de selección: [PANTALLA_SELECCION]
+- Funcionalidades requeridas: [FUNCIONALIDADES]
+- Botones personalizados: [BOTONES_CUSTOM]
+- Validaciones de entrada
+- Export functionality (Excel, PDF)
+- Print capabilities
+- Column optimization
+- Sum/subtotal functionality
+- Color coding por condiciones
+- Hotspot functionality
+- Navigation capabilities
+- Performance optimization
+- User settings persistence
+- Authorization checks
+- Error handling completo`,
+        tags: ["ALV Grid", "Report", "Export", "User Interface"],
         developmentType: "nuevo",
-        complexity: "básico"
+        complexity: "intermedio"
       },
       {
-        title: "ALV con funcionalidades avanzadas",
-        description: "ALV con filtros, sorting y export para evolutivos",
-        code: `DATA: lo_salv TYPE REF TO cl_salv_table.
-
-cl_salv_table=>factory(
-  IMPORTING
-    r_salv_table = lo_salv
-  CHANGING
-    t_table      = lt_data ).
-
-" Habilitar todas las funciones
-lo_salv->get_functions( )->set_all( ).
-
-" Configurar columnas con formato específico
-DATA(lo_columns) = lo_salv->get_columns( ).
-lo_columns->set_optimize( ).
-
-" Configurar columna específica
-DATA(lo_column) = lo_columns->get_column( 'NETWR' ).
-lo_column->set_currency_column( 'WAERS' ).
-lo_column->set_long_text( 'Net Value' ).
-
-" Configurar filtros automáticos
-DATA(lo_filter) = lo_salv->get_filters( ).
-lo_filter->add_filter( 
-  columnname = 'MTART'
-  value = 'FERT' ).
-
-" Configurar eventos
-DATA(lo_events) = lo_salv->get_event( ).
-SET HANDLER lcl_event_handler=>on_link_click FOR lo_events.
-
-" Mostrar
-lo_salv->display( ).`,
-        tags: ["cl_salv_table", "Advanced Features", "Events", "Filters"],
+        title: "ALV con jerarquías",
+        description: "Prompt para ALV Tree con estructura jerárquica",
+        prompt: `Desarrolla ALV Tree report con estructura jerárquica:
+- Estructura de jerarquía: [DESCRIPCION_JERARQUIA]
+- Niveles de agrupación: [NIVELES_GRUPO]
+- Datos padre: [ENTIDAD_PADRE]
+- Datos hijo: [ENTIDADES_HIJO]
+- Agregaciones por nivel: [AGREGACIONES]
+- Expand/collapse functionality
+- Drill-down capabilities
+- Context menus por nivel
+- Different icons por tipo de nodo
+- Sorting multi-level
+- Filtering jerárquico
+- Export manteniendo estructura
+- Performance optimization para grandes volúmenes
+- Memory management
+- User interaction patterns
+- Mobile responsive considerations
+- Accessibility features`,
+        tags: ["ALV Tree", "Hierarchy", "Drill-down", "Complex Structure"],
         developmentType: "evolutivo",
-        complexity: "intermedio"
+        complexity: "avanzado"
       },
       {
-        title: "ALV con corrección de datos",
-        description: "ALV con validación y corrección de datos para correctivos",
-        code: `CLASS lcl_alv_validator DEFINITION.
-  PUBLIC SECTION.
-    METHODS: validate_and_display
-      CHANGING
-        ct_data TYPE ztt_material_data.
-        
-  PRIVATE SECTION.
-    METHODS: validate_data
-      CHANGING
-        ct_data TYPE ztt_material_data,
-      fix_data_issues
-      CHANGING
-        ct_data TYPE ztt_material_data,
-      display_with_validation
-      IMPORTING
-        it_data TYPE ztt_material_data.
-ENDCLASS.
-
-CLASS lcl_alv_validator IMPLEMENTATION.
-  METHOD validate_and_display.
-    " Validar datos antes de mostrar
-    validate_data( CHANGING ct_data = ct_data ).
-    
-    " Corregir problemas encontrados
-    fix_data_issues( CHANGING ct_data = ct_data ).
-    
-    " Mostrar con indicadores de calidad
-    display_with_validation( ct_data ).
-  ENDMETHOD.
-  
-  METHOD validate_data.
-    LOOP AT ct_data INTO DATA(ls_data).
-      " Validaciones específicas
-      IF ls_data-meins = ''.
-        ls_data-status = 'ERROR'.
-        ls_data-message = 'Missing base unit'.
-      ELSEIF ls_data-netwr < 0.
-        ls_data-status = 'WARNING'.
-        ls_data-message = 'Negative value detected'.
-      ELSE.
-        ls_data-status = 'OK'.
-        CLEAR ls_data-message.
-      ENDIF.
-      
-      MODIFY ct_data FROM ls_data.
-    ENDLOOP.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Data Validation", "Error Correction", "Quality Control"],
+        title: "ALV con validación de datos",
+        description: "Prompt para ALV con capacidades de edición y validación",
+        prompt: `Crea ALV editable con validación de datos para:
+- Entidad a editar: [ENTIDAD_PRINCIPAL]
+- Campos editables: [CAMPOS_EDITABLES]
+- Campos readonly: [CAMPOS_READONLY]
+- Validaciones por campo: [REGLAS_VALIDACION]
+- Validaciones cross-field: [VALIDACIONES_CRUZADAS]
+- Save functionality con transacciones
+- Rollback capabilities
+- Change tracking
+- Mass operations (copy, delete, modify)
+- Data quality checks
+- Duplicate detection
+- Authorization por campo
+- Audit trail
+- Error highlighting
+- Batch processing
+- Conflict resolution
+- Integration con change documents
+- Testing scenarios`,
+        tags: ["Editable ALV", "Data Validation", "Transaction", "Quality"],
         developmentType: "correctivo",
-        complexity: "intermedio"
+        complexity: "avanzado"
       }
     ]
   },
@@ -999,84 +594,82 @@ ENDCLASS.`,
     icon: "📄",
     prompts: [
       {
-        title: "SmartForm - Definición",
-        description: "Estructura básica de un SmartForm para nuevo desarrollo",
-        code: `" Llamada a SmartForm
-DATA: lv_fm_name TYPE rs38l_fnam.
-
-CALL FUNCTION 'SSF_FUNCTION_MODULE_NAME'
-  EXPORTING
-    formname           = 'ZSF_INVOICE'
-  IMPORTING
-    fm_name            = lv_fm_name
-  EXCEPTIONS
-    no_form            = 1
-    no_function_module = 2
-    OTHERS             = 3.
-
-CALL FUNCTION lv_fm_name
-  EXPORTING
-    control_parameters = ls_control
-    output_options     = ls_output
-    user_settings      = ' '
-    is_header         = ls_header
-    it_items          = lt_items
-  EXCEPTIONS
-    formatting_error   = 1
-    internal_error     = 2
-    send_error         = 3
-    user_canceled      = 4
-    OTHERS             = 5.`,
-        tags: ["SmartForm", "SSF_FUNCTION_MODULE_NAME", "control_parameters"],
+        title: "SmartForm básico",
+        description: "Prompt para crear SmartForm estándar",
+        prompt: `Crea un SmartForm para [TIPO_DOCUMENTO] con:
+- Nombre del formulario: [NOMBRE_FORM]
+- Datos de entrada: [ESTRUCTURA_DATOS]
+- Secciones del documento: [SECCIONES]
+- Header information: [INFO_HEADER]
+- Line items structure: [ESTRUCTURA_ITEMS]
+- Footer information: [INFO_FOOTER]
+- Logos y imágenes: [ELEMENTOS_GRAFICOS]
+- Conditional texts: [TEXTOS_CONDICIONALES]
+- Calculations: [CALCULOS]
+- Multiple language support
+- Print parameters configuration
+- Email integration
+- PDF generation settings
+- Archive integration
+- Layout responsive design
+- Testing procedures
+- Maintenance documentation`,
+        tags: ["SmartForm", "Document", "Print", "PDF"],
         developmentType: "nuevo",
         complexity: "básico"
       },
       {
-        title: "Adobe Forms con datos dinámicos",
-        description: "Formulario Adobe con contenido dinámico para evolutivos",
-        code: `" Llamada a Adobe Form con datos dinámicos
-DATA: lo_fp TYPE REF TO if_fp,
-      lo_pdfobj TYPE REF TO if_fp_pdf_object,
-      lo_usage TYPE REF TO if_fp_usage.
-
-" Obtener instancia del Form Processing
-lo_fp = cl_fp=>get_reference( ).
-
-" Configurar uso del formulario
-lo_usage = lo_fp->create_usage( ).
-lo_usage->set_formtemplate_name( 'ZFP_TRAVEL_FORM' ).
-lo_usage->set_programming_language( if_fp_usage=>c_lang_abap ).
-
-" Crear objeto PDF
-lo_pdfobj = lo_usage->create_pdf_object( ).
-
-" Configurar datos del formulario
-DATA(ls_form_data) = VALUE zs_travel_form_data(
-  travel_id = lv_travel_id
-  customer_name = lv_customer
-  total_amount = lv_amount
-  currency = lv_currency
-  items = lt_items
-).
-
-" Configurar parámetros dinámicos
-LOOP AT lt_dynamic_fields INTO DATA(ls_field).
-  lo_pdfobj->set_data( 
-    name = ls_field-field_name
-    value = ls_field-field_value ).
-ENDLOOP.
-
-" Generar PDF
-lo_pdfobj->set_data( 
-  name = 'FORM_DATA'
-  value = ls_form_data ).
-
-lo_pdfobj->execute( ).
-
-" Obtener resultado
-DATA(lv_pdf_data) = lo_pdfobj->get_pdf( ).`,
-        tags: ["Adobe Forms", "Dynamic Data", "PDF Generation"],
+        title: "Adobe Forms interactivo",
+        description: "Prompt para formulario Adobe con interactividad",
+        prompt: `Desarrolla Adobe Form interactivo para:
+- Propósito del formulario: [PROPOSITO]
+- Campos de entrada interactivos: [CAMPOS_ENTRADA]
+- Validaciones client-side: [VALIDACIONES_CLIENT]
+- Cálculos automáticos: [CALCULOS_AUTO]
+- Conditional logic: [LOGICA_CONDICIONAL]
+- Submit functionality: [FUNCIONALIDAD_SUBMIT]
+- Integration con backend: [INTEGRACION_BACKEND]
+- Digital signature support
+- Form versioning
+- User role-based fields
+- Save/resume capability
+- Mobile responsiveness
+- Accessibility compliance
+- Multi-language support
+- Print optimization
+- Security considerations
+- Testing scenarios
+- Distribution mechanisms`,
+        tags: ["Adobe Forms", "Interactive", "Digital Signature", "Mobile"],
         developmentType: "evolutivo",
+        complexity: "avanzado"
+      },
+      {
+        title: "Corrección formularios con errores",
+        description: "Prompt para diagnosticar y corregir problemas en formularios",
+        prompt: `Analiza y corrige problemas en formulario existente:
+
+[DESCRIPCION_PROBLEMA_ACTUAL]
+
+Diagnosticar y solucionar:
+- Errores de layout y formatting
+- Performance issues en generación
+- Memory problems con grandes volúmenes
+- Character encoding issues
+- Print quality problems
+- Missing data o campos vacíos
+- Integration failures
+- Version compatibility issues
+- Authorization problems
+- Archive/email delivery failures
+- Mobile rendering problems
+- Multi-language issues
+- Digital signature errors
+- Proporcionar solución paso a paso
+- Incluir testing plan
+- Preventive measures`,
+        tags: ["Troubleshooting", "Error Resolution", "Performance", "Quality"],
+        developmentType: "correctivo",
         complexity: "avanzado"
       }
     ]
@@ -1086,125 +679,80 @@ DATA(lv_pdf_data) = lo_pdfobj->get_pdf( ).`,
     icon: "🔧",
     prompts: [
       {
-        title: "BAPI Material - Crear",
-        description: "Crear material usando BAPI para nuevo desarrollo",
-        code: `DATA: ls_headdata TYPE bapimathead,
-      ls_clientdata TYPE bapi_mara,
-      lt_return TYPE TABLE OF bapiret2.
-
-ls_headdata-material = 'TEST001'.
-ls_headdata-ind_sector = 'M'.
-ls_headdata-matl_type = 'FERT'.
-
-ls_clientdata-base_uom = 'EA'.
-ls_clientdata-division = '01'.
-
-CALL FUNCTION 'BAPI_MATERIAL_SAVEDATA'
-  EXPORTING
-    headdata    = ls_headdata
-    clientdata  = ls_clientdata
-  TABLES
-    return      = lt_return.
-
-IF line_exists( lt_return[ type = 'E' ] ).
-  CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
-ELSE.
-  CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
-    EXPORTING
-      wait = 'X'.
-ENDIF.`,
-        tags: ["BAPI", "BAPI_MATERIAL_SAVEDATA", "COMMIT", "ROLLBACK"],
+        title: "BAPI estándar optimizado",
+        description: "Prompt para uso eficiente de BAPIs estándar",
+        prompt: `Implementa llamada optimizada a BAPI estándar para:
+- BAPI a utilizar: [NOMBRE_BAPI]
+- Operación objetivo: [OPERACION]
+- Datos de entrada: [ESTRUCTURA_ENTRADA]
+- Validaciones previas: [VALIDACIONES_PREVIAS]
+- Error handling robusto
+- Commit/rollback logic
+- Batch processing si aplica
+- Performance optimization
+- Authorization checks
+- Logging implementation
+- Retry mechanism
+- Transaction scope management
+- Memory management
+- Progress tracking
+- Integration testing
+- Documentation completa
+- Best practices adherence
+- Monitoring integration`,
+        tags: ["BAPI", "Error Handling", "Performance", "Best Practices"],
         developmentType: "nuevo",
         complexity: "intermedio"
       },
       {
-        title: "BAPI con manejo robusto de errores",
-        description: "BAPI con validación completa y manejo de errores para correctivos",
-        code: `CLASS zcl_bapi_material_handler DEFINITION.
-  PUBLIC SECTION.
-    METHODS: create_material
-      IMPORTING
-        is_material_data TYPE zs_material_create
-      RETURNING
-        VALUE(rs_result) TYPE zs_creation_result.
-        
-  PRIVATE SECTION.
-    METHODS: validate_input_data
-      IMPORTING
-        is_data TYPE zs_material_create
-      RETURNING
-        VALUE(rt_errors) TYPE bapiret2_t,
-      execute_bapi_with_retry
-      IMPORTING
-        is_headdata TYPE bapimathead
-        is_clientdata TYPE bapi_mara
-      RETURNING
-        VALUE(rt_return) TYPE bapiret2_t.
-ENDCLASS.
-
-CLASS zcl_bapi_material_handler IMPLEMENTATION.
-  METHOD create_material.
-    " Validar datos de entrada
-    DATA(lt_validation_errors) = validate_input_data( is_material_data ).
-    
-    IF lines( lt_validation_errors ) > 0.
-      rs_result-success = abap_false.
-      rs_result-messages = lt_validation_errors.
-      RETURN.
-    ENDIF.
-    
-    " Preparar datos para BAPI
-    DATA(ls_headdata) = VALUE bapimathead(
-      material = is_material_data-material
-      ind_sector = is_material_data-industry
-      matl_type = is_material_data-material_type ).
-      
-    " Ejecutar BAPI con retry logic
-    DATA(lt_bapi_return) = execute_bapi_with_retry(
-      is_headdata = ls_headdata
-      is_clientdata = CORRESPONDING #( is_material_data ) ).
-    
-    " Analizar resultados
-    rs_result-success = COND #( WHEN line_exists( lt_bapi_return[ type = 'E' ] )
-                               THEN abap_false ELSE abap_true ).
-    rs_result-messages = lt_bapi_return.
-    
-    IF rs_result-success = abap_true.
-      rs_result-material_number = ls_headdata-material.
-    ENDIF.
-  ENDMETHOD.
-  
-  METHOD execute_bapi_with_retry.
-    DATA: lv_retry_count TYPE i VALUE 0,
-          lv_max_retries TYPE i VALUE 3.
-          
-    DO lv_max_retries TIMES.
-      lv_retry_count = lv_retry_count + 1.
-      
-      CALL FUNCTION 'BAPI_MATERIAL_SAVEDATA'
-        EXPORTING
-          headdata = is_headdata
-          clientdata = is_clientdata
-        TABLES
-          return = rt_return.
-          
-      " Si no hay errores, salir del loop
-      IF NOT line_exists( rt_return[ type = 'E' ] ).
-        CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
-          EXPORTING
-            wait = 'X'.
-        EXIT.
-      ELSE.
-        " Si es el último intento, no hacer rollback
-        if lv_retry_count < lv_max_retries.
-          CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
-          WAIT UP TO 1 SECONDS.  " Pausa antes del retry
-        ENDIF.
-      ENDIF.
-    ENDDO.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Error Handling", "Retry Logic", "Validation", "Robust Processing"],
+        title: "Function Module personalizado",
+        description: "Prompt para crear función reutilizable",
+        prompt: `Desarrolla Function Module personalizado para:
+- Nombre de la función: [NOMBRE_FUNCION]
+- Propósito específico: [PROPOSITO]
+- Parámetros de entrada: [PARAMETROS_ENTRADA]
+- Parámetros de salida: [PARAMETROS_SALIDA]
+- Tablas internas: [TABLAS_INTERNAS]
+- Lógica de negocio: [DESCRIPCION_LOGICA]
+- Exception handling
+- Input validation
+- Performance optimization
+- Memory efficient processing
+- Transactional behavior
+- Authorization integration
+- Logging capabilities
+- Documentation estándar SAP
+- Testing framework
+- Version management
+- Backward compatibility
+- Integration guidelines`,
+        tags: ["Function Module", "Reusable", "Business Logic", "Documentation"],
+        developmentType: "nuevo",
+        complexity: "intermedio"
+      },
+      {
+        title: "BAPI con manejo de errores avanzado",
+        description: "Prompt para implementación robusta con recuperación de errores",
+        prompt: `Implementa BAPI call con error handling avanzado para:
+- BAPI principal: [NOMBRE_BAPI]
+- Escenarios de error esperados: [ESCENARIOS_ERROR]
+- Estrategias de recovery: [ESTRATEGIAS_RECOVERY]
+- Compensation logic: [LOGICA_COMPENSACION]
+- Retry patterns con exponential backoff
+- Circuit breaker implementation
+- Dead letter queue handling
+- Correlation ID tracking
+- Distributed transaction support
+- Saga pattern si es necesario
+- Monitoring y alerting
+- Audit trail completo
+- Performance impact analysis
+- Chaos engineering considerations
+- Documentation de runbooks
+- Incident response procedures
+- Recovery time objectives
+- Testing fault scenarios`,
+        tags: ["Advanced Error Handling", "Resilience", "Distributed Systems"],
         developmentType: "correctivo",
         complexity: "avanzado"
       }
@@ -1215,154 +763,81 @@ ENDCLASS.`,
     icon: "⚙️",
     prompts: [
       {
-        title: "User-Exit Implementation",
-        description: "Implementación básica de User-Exit para nuevo desarrollo",
-        code: `" En include del User-Exit
-CASE i_step.
-  WHEN '001'.
-    " Validación antes de grabar
-    LOOP AT i_vbap INTO wa_vbap.
-      IF wa_vbap-kwmeng > 1000.
-        MESSAGE e001(z_custom) WITH 'Quantity exceeds limit'.
-      ENDIF.
-    ENDLOOP.
-    
-  WHEN '002'.
-    " Modificación de datos
-    LOOP AT c_vbap INTO wa_vbap.
-      wa_vbap-zzfield = 'CUSTOM_VALUE'.
-      MODIFY c_vbap FROM wa_vbap.
-    ENDLOOP.
-ENDCASE.`,
-        tags: ["User-Exit", "CASE", "MESSAGE", "MODIFY"],
-        developmentType: "nuevo",
+        title: "User-Exit implementation",
+        description: "Prompt para implementar User-Exit estándar",
+        prompt: `Implementa User-Exit para:
+- Programa/transacción: [PROGRAMA_BASE]
+- User-Exit específico: [NOMBRE_EXIT]
+- Trigger point: [PUNTO_ACTIVACION]
+- Lógica de negocio requerida: [LOGICA_NEGOCIO]
+- Validaciones a implementar: [VALIDACIONES]
+- Modificaciones de datos: [MODIFICACIONES]
+- Error handling
+- Performance considerations
+- Impact analysis
+- Testing approach
+- Documentation completa
+- Upgrade compatibility
+- Rollback procedures
+- Authorization checks
+- Audit trail
+- Change management
+- Best practices compliance
+- Alternative solutions analysis`,
+        tags: ["User-Exit", "Standard Enhancement", "Business Logic"],
+        developmentType: "evolutivo",
         complexity: "intermedio"
       },
       {
-        title: "Enhancement Spot con filtros",
-        description: "Enhancement spot con lógica de filtrado para evolutivos",
-        code: `" Enhancement Spot Implementation
-CLASS zcl_enh_sales_document DEFINITION.
-  PUBLIC SECTION.
-    INTERFACES: if_ex_sales_document_enh.
-ENDCLASS.
-
-CLASS zcl_enh_sales_document IMPLEMENTATION.
-  METHOD if_ex_sales_document_enh~change_item_data.
-    " Lógica evolutiva para modificar items
-    LOOP AT ct_vbap INTO DATA(ls_item).
-      " Aplicar descuentos especiales por volumen
-      IF ls_item-kwmeng >= 100.
-        ls_item-zz_volume_discount = '10'.
-        ls_item-netwr = ls_item-netwr * '0.9'.
-      ELSEIF ls_item-kwmeng >= 50.
-        ls_item-zz_volume_discount = '5'.
-        ls_item-netwr = ls_item-netwr * '0.95'.
-      ENDIF.
-      
-      " Validación de precios especiales
-      IF ls_item-matnr IN rt_special_materials.
-        " Aplicar precio especial desde tabla personalizada
-        SELECT SINGLE special_price FROM ztable_special_prices
-          INTO @DATA(lv_special_price)
-          WHERE matnr = @ls_item-matnr
-            AND vkorg = @lv_sales_org
-            AND valid_from <= @sy-datum
-            AND valid_to >= @sy-datum.
-            
-        IF sy-subrc = 0.
-          ls_item-netwr = lv_special_price * ls_item-kwmeng.
-        ENDIF.
-      ENDIF.
-      
-      MODIFY ct_vbap FROM ls_item.
-    ENDLOOP.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Enhancement Spot", "Business Logic", "Price Calculation"],
+        title: "BAdI Implementation",
+        description: "Prompt para implementar Business Add-In",
+        prompt: `Desarrolla BAdI Implementation para:
+- BAdI definition: [NOMBRE_BADI]
+- Implementation class: [NOMBRE_CLASE]
+- Interface methods: [METODOS_INTERFACE]
+- Filter criteria si aplica: [CRITERIOS_FILTRO]
+- Business logic específica: [LOGICA_ESPECIFICA]
+- Context data handling: [MANEJO_CONTEXTO]
+- Multi-implementation support
+- Priority handling
+- Error propagation
+- Performance optimization
+- Authorization integration
+- Configuration management
+- Testing strategies
+- Documentation estándar
+- Upgrade considerations
+- Monitoring capabilities
+- Change impact analysis
+- Deployment procedures`,
+        tags: ["BAdI", "Implementation Class", "Interface", "Configuration"],
         developmentType: "evolutivo",
         complexity: "avanzado"
       },
       {
-        title: "BAdI con validación de datos",
-        description: "BAdI con validaciones específicas para correctivos",
-        code: `CLASS zcl_badi_data_validation DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES: if_ex_material_badi.
-
-  PRIVATE SECTION.
-    METHODS: validate_material_data
-      IMPORTING
-        is_material TYPE mara
-      RETURNING
-        VALUE(rt_errors) TYPE bapiret2_t,
-      fix_data_inconsistencies
-      CHANGING
-        cs_material TYPE mara.
-ENDCLASS.
-
-CLASS zcl_badi_data_validation IMPLEMENTATION.
-  METHOD if_ex_material_badi~check_material.
-    " Validaciones específicas para correctivos
-    DATA(lt_errors) = validate_material_data( is_material ).
-    
-    " Si hay errores críticos, bloquear
-    IF line_exists( lt_errors[ type = 'E' ] ).
-      LOOP AT lt_errors INTO DATA(ls_error) WHERE type = 'E'.
-        MESSAGE ID ls_error-id TYPE ls_error-type NUMBER ls_error-number
-          WITH ls_error-message_v1 ls_error-message_v2 
-               ls_error-message_v3 ls_error-message_v4.
-      ENDLOOP.
-    ENDIF.
-    
-    " Intentar corregir datos automáticamente
-    fix_data_inconsistencies( CHANGING cs_material = cs_material ).
-  ENDMETHOD.
-  
-  METHOD validate_material_data.
-    " Validación 1: Base unit obligatoria
-    IF is_material-meins = ''.
-      APPEND VALUE #( type = 'E' id = 'Z_MATERIAL' number = '001'
-                     message_v1 = 'Base unit is mandatory' ) TO rt_errors.
-    ENDIF.
-    
-    " Validación 2: Peso debe ser coherente
-    IF is_material-brgew > 0 AND is_material-gewei = ''.
-      APPEND VALUE #( type = 'E' id = 'Z_MATERIAL' number = '002'
-                     message_v1 = 'Weight unit missing' ) TO rt_errors.
-    ENDIF.
-    
-    " Validación 3: Verificar duplicados por EAN
-    IF is_material-ean11 <> ''.
-      SELECT COUNT(*) FROM mara
-        INTO @DATA(lv_count)
-        WHERE ean11 = @is_material-ean11
-          AND matnr <> @is_material-matnr.
-          
-      IF lv_count > 0.
-        APPEND VALUE #( type = 'E' id = 'Z_MATERIAL' number = '003'
-                       message_v1 = 'EAN already exists' 
-                       message_v2 = is_material-ean11 ) TO rt_errors.
-      ENDIF.
-    ENDIF.
-  ENDMETHOD.
-  
-  METHOD fix_data_inconsistencies.
-    " Corrección automática de datos
-    IF cs_material-meins = '' AND cs_material-mtart = 'FERT'.
-      cs_material-meins = 'EA'.  " Default unit para productos terminados
-    ENDIF.
-    
-    " Normalizar campos de texto
-    cs_material-maktx = cl_abap_char_utilities=>uppercase( cs_material-maktx ).
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["BAdI", "Data Validation", "Auto Correction", "Business Rules"],
-        developmentType: "correctivo",
+        title: "Enhancement Spot personalizado",
+        description: "Prompt para crear Enhancement Spot desde cero",
+        prompt: `Crea Enhancement Spot personalizado para:
+- Nombre del Enhancement Spot: [NOMBRE_SPOT]
+- Localización en código: [UBICACION_CODIGO]
+- Tipos de enhancement soportados: [TIPOS_ENHANCEMENT]
+- Interface definition: [DEFINICION_INTERFACE]
+- Parameters disponibles: [PARAMETROS_DISPONIBLES]
+- Implementation guidelines: [GUIAS_IMPLEMENTACION]
+- Security considerations
+- Performance impact assessment
+- Versioning strategy
+- Documentation templates
+- Testing framework
+- Implementation examples
+- Best practices guide
+- Troubleshooting procedures
+- Migration path planning
+- Community guidelines
+- Support procedures
+- Evolution roadmap`,
+        tags: ["Enhancement Spot", "Framework", "Extensibility", "Architecture"],
+        developmentType: "nuevo",
         complexity: "avanzado"
       }
     ]
@@ -1372,192 +847,83 @@ ENDCLASS.`,
     icon: "⚡",
     prompts: [
       {
-        title: "SELECT optimizado básico",
-        description: "Consulta básica optimizada para nuevo desarrollo",
-        code: `" Verificar que la tabla interna no esté vacía
-IF lt_vbeln IS NOT INITIAL.
-  SELECT vbeln, posnr, matnr, kwmeng
-    FROM vbap
-    INTO TABLE @DATA(lt_items)
-    FOR ALL ENTRIES IN @lt_vbeln
-    WHERE vbeln = @lt_vbeln-vbeln.
-ENDIF.
+        title: "Análisis de performance básico",
+        description: "Prompt para identificar y resolver problemas de performance",
+        prompt: `Analiza y optimiza performance del siguiente código ABAP:
 
-" Usar FILTER para búsquedas eficientes
-DATA(lt_filtered) = FILTER #( lt_items USING KEY vbeln
-  WHERE vbeln = lv_sales_doc ).`,
-        tags: ["FOR ALL ENTRIES", "FILTER", "Performance"],
-        developmentType: "nuevo",
-        complexity: "básico"
+[PEGAR_CODIGO_A_OPTIMIZAR]
+
+Realizar análisis de:
+- Database access patterns
+- Loop optimization opportunities
+- Memory usage patterns
+- CPU intensive operations
+- Network round trips
+- Caching opportunities
+- Index usage verification
+- Parallel processing possibilities
+- Buffer utilization
+- Transaction scope optimization
+- Progress indicator implementation
+- Resource cleanup
+- Bottleneck identification
+- Before/after comparison
+- Performance measurement
+- Monitoring recommendations
+- Preventive measures`,
+        tags: ["Performance Analysis", "Optimization", "Bottleneck", "Monitoring"],
+        developmentType: "optimizacion",
+        complexity: "intermedio"
       },
       {
-        title: "Optimización avanzada con índices",
-        description: "Consulta altamente optimizada para mejorar performance existente",
-        code: `" Clase para optimización avanzada de consultas
-CLASS zcl_performance_optimizer DEFINITION.
-  PUBLIC SECTION.
-    METHODS: get_optimized_sales_data
-      IMPORTING
-        it_selection TYPE ztt_sales_selection
-      RETURNING
-        VALUE(rt_data) TYPE ztt_sales_data.
-        
-  PRIVATE SECTION.
-    METHODS: build_optimized_query
-      IMPORTING
-        it_selection TYPE ztt_sales_selection
-      RETURNING
-        VALUE(rv_query) TYPE string,
-      use_parallel_processing
-      IMPORTING
-        it_selection TYPE ztt_sales_selection
-      RETURNING
-        VALUE(rt_data) TYPE ztt_sales_data.
-ENDCLASS.
-
-CLASS zcl_performance_optimizer IMPLEMENTATION.
-  METHOD get_optimized_sales_data.
-    " Decidir estrategia basada en volumen de datos
-    DATA(lv_selection_size) = lines( it_selection ).
-    
-    IF lv_selection_size > 10000.
-      " Para grandes volúmenes, usar procesamiento paralelo
-      rt_data = use_parallel_processing( it_selection ).
-    ELSE.
-      " Para volúmenes menores, usar consulta optimizada simple
-      SELECT h~vbeln, h~kunnr, h~netwr,
-             i~posnr, i~matnr, i~kwmeng
-        FROM vbak AS h
-        INNER JOIN vbap AS i ON h~vbeln = i~vbeln
-        INTO CORRESPONDING FIELDS OF TABLE @rt_data
-        FOR ALL ENTRIES IN @it_selection
-        WHERE h~vbeln = @it_selection-vbeln
-          AND h~vkorg IN @it_selection-sales_org_range
-          AND h~erdat IN @it_selection-date_range
-          " Usar índice específico
-          AND h~auart IN ('ZOR1', 'ZOR2')
-        ORDER BY h~vbeln, i~posnr.
-    ENDIF.
-    
-    " Cache results para consultas repetidas
-    zcl_cache_manager=>store_results( 
-      iv_key = |SALES_{ lv_selection_size }|
-      it_data = rt_data ).
-  ENDMETHOD.
-  
-  METHOD use_parallel_processing.
-    " Dividir selección en chunks para procesamiento paralelo
-    DATA: lt_chunk1 TYPE ztt_sales_selection,
-          lt_chunk2 TYPE ztt_sales_selection,
-          lt_chunk3 TYPE ztt_sales_selection.
-          
-    " Dividir datos en 3 grupos
-    DATA(lv_chunk_size) = lines( it_selection ) DIV 3.
-    
-    " Procesamiento asíncrono usando ABAP Push Channels
-    CALL FUNCTION 'Z_PARALLEL_SALES_QUERY'
-      STARTING NEW TASK 'TASK1'
-      EXPORTING
-        it_selection = lt_chunk1.
-        
-    CALL FUNCTION 'Z_PARALLEL_SALES_QUERY' 
-      STARTING NEW TASK 'TASK2'
-      EXPORTING
-        it_selection = lt_chunk2.
-        
-    " Procesar tercer chunk en foreground
-    " ... lógica de procesamiento paralelo
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Advanced Optimization", "Parallel Processing", "Caching", "Index Usage"],
+        title: "Optimización avanzada con paralelización",
+        description: "Prompt para implementar procesamiento paralelo",
+        prompt: `Implementa optimización avanzada con paralelización para:
+- Proceso actual: [DESCRIPCION_PROCESO]
+- Volumen de datos: [VOLUMEN_DATOS]
+- Time constraints: [RESTRICCIONES_TIEMPO]
+- Available resources: [RECURSOS_DISPONIBLES]
+- Parallel processing strategy: [ESTRATEGIA_PARALELA]
+- Work distribution algorithm
+- Synchronization mechanisms
+- Error handling en contexto paralelo
+- Resource contention management
+- Load balancing
+- Progress monitoring agregado
+- Memory management distribuido
+- Transaction coordination
+- Fault tolerance
+- Scalability considerations
+- Performance metrics collection
+- Testing parallel scenarios
+- Deployment strategy`,
+        tags: ["Parallel Processing", "Advanced Optimization", "Scalability"],
         developmentType: "optimizacion",
         complexity: "avanzado"
       },
       {
-        title: "Memory Management",
-        description: "Gestión eficiente de memoria para aplicaciones pesadas",
-        code: `" Clase para gestión optimizada de memoria
-CLASS zcl_memory_manager DEFINITION.
-  PUBLIC SECTION.
-    METHODS: process_large_dataset
-      IMPORTING
-        iv_max_memory TYPE i DEFAULT 100  " MB
-      CHANGING
-        ct_data TYPE STANDARD TABLE.
-        
-  PRIVATE SECTION.
-    METHODS: get_memory_usage
-      RETURNING
-        VALUE(rv_memory_mb) TYPE i,
-      process_in_chunks
-      CHANGING
-        ct_data TYPE STANDARD TABLE,
-      cleanup_memory.
-ENDCLASS.
-
-CLASS zcl_memory_manager IMPLEMENTATION.
-  METHOD process_large_dataset.
-    CONSTANTS: lc_chunk_size TYPE i VALUE 10000.
-    
-    DATA: lv_current_memory TYPE i,
-          lv_processed_records TYPE i,
-          lt_chunk TYPE STANDARD TABLE.
-          
-    " Procesar en chunks para evitar overflow de memoria
-    DO.
-      " Verificar uso de memoria actual
-      lv_current_memory = get_memory_usage( ).
-      
-      IF lv_current_memory > iv_max_memory.
-        " Liberar memoria si es necesario
-        cleanup_memory( ).
-        
-        " Si aún excede el límite, procesar en chunks más pequeños
-        IF get_memory_usage( ) > iv_max_memory.
-          process_in_chunks( CHANGING ct_data = ct_data ).
-          EXIT.
-        ENDIF.
-      ENDIF.
-      
-      " Procesar siguiente chunk
-      CLEAR lt_chunk.
-      LOOP AT ct_data INTO DATA(ls_data) FROM lv_processed_records + 1 
-                                         TO lv_processed_records + lc_chunk_size.
-        APPEND ls_data TO lt_chunk.
-      ENDLOOP.
-      
-      IF lines( lt_chunk ) = 0.
-        EXIT.  " No más datos para procesar
-      ENDIF.
-      
-      " Procesar chunk actual
-      " ... lógica de procesamiento
-      
-      lv_processed_records = lv_processed_records + lines( lt_chunk ).
-      
-      " Progreso para usuario
-      cl_progress_indicator=>progress_indicate(
-        i_text = |Processing record { lv_processed_records } of { lines( ct_data ) }|
-        i_processed = lv_processed_records
-        i_total = lines( ct_data ) ).
-    ENDDO.
-  ENDMETHOD.
-  
-  METHOD get_memory_usage.
-    " Obtener uso actual de memoria (simplificado)
-    CALL 'GET_MEMORY_USAGE'
-      ID 'MEMORY' FIELD rv_memory_mb.
-  ENDMETHOD.
-  
-  METHOD cleanup_memory.
-    " Liberar memoria no utilizada
-    CALL 'MEMORY_CLEANUP'.
-    
-    " Forzar garbage collection
-    CALL 'ABAP_GARBAGE_COLLECT'.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Memory Management", "Chunk Processing", "Performance Monitoring"],
+        title: "Memory management optimizado",
+        description: "Prompt para gestión eficiente de memoria",
+        prompt: `Optimiza memory management para aplicación con:
+- Current memory issues: [PROBLEMAS_MEMORIA_ACTUALES]
+- Data volume characteristics: [CARACTERISTICAS_VOLUMEN]
+- Processing patterns: [PATRONES_PROCESAMIENTO]
+- Memory constraints: [LIMITACIONES_MEMORIA]
+- Garbage collection strategy
+- Object lifecycle management
+- Cache optimization
+- Stream processing implementation
+- Chunk processing algorithms
+- Memory leak prevention
+- Resource pooling
+- Lazy loading patterns
+- Memory profiling integration
+- Monitoring y alerting
+- Capacity planning
+- Performance testing
+- Documentation de patterns
+- Best practices guide`,
+        tags: ["Memory Management", "Resource Optimization", "Capacity Planning"],
         developmentType: "optimizacion",
         complexity: "avanzado"
       }
@@ -1568,274 +934,81 @@ ENDCLASS.`,
     icon: "🐛",
     prompts: [
       {
-        title: "Breakpoints dinámicos",
-        description: "Técnicas de debugging básico para nuevo desarrollo",
-        code: `" Breakpoint condicional
-IF sy-uname = 'DEVELOPER'.
-  BREAK-POINT.
-ENDIF.
-
-" Logging para análisis
-MESSAGE i001(z_log) WITH 'Processing material:' lv_matnr.
-
-" Assert para validaciones
-ASSERT lv_quantity > 0.
-
-" Checkpoint para análisis de performance
-BREAK-POINT ID z_debug_point.`,
-        tags: ["BREAK-POINT", "ASSERT", "MESSAGE", "Debugging"],
-        developmentType: "nuevo",
-        complexity: "básico"
+        title: "Debugging strategy completa",
+        description: "Prompt para implementar debugging comprehensivo",
+        prompt: `Desarrolla debugging strategy para:
+- Aplicación/módulo: [NOMBRE_APLICACION]
+- Problemas reportados: [DESCRIPCION_PROBLEMAS]
+- Environment details: [DETALLES_AMBIENTE]
+- Reproduction steps: [PASOS_REPRODUCCION]
+- Debug tools a utilizar: [HERRAMIENTAS_DEBUG]
+- Logging strategy implementation
+- Breakpoint strategy
+- Variable inspection approach
+- Performance profiling
+- Memory analysis
+- Call stack analysis
+- Exception handling verification
+- Data flow tracing
+- Integration point testing
+- Root cause analysis methodology
+- Fix verification approach
+- Regression testing plan
+- Documentation de findings`,
+        tags: ["Debugging Strategy", "Root Cause Analysis", "Testing"],
+        developmentType: "correctivo",
+        complexity: "intermedio"
       },
       {
-        title: "Advanced Debugging con SAT",
-        description: "Debugging avanzado con herramientas de análisis para optimización",
-        code: `" Clase para debugging avanzado y análisis de performance
-CLASS zcl_advanced_debugger DEFINITION.
-  PUBLIC SECTION.
-    METHODS: start_performance_analysis
-      IMPORTING
-        iv_analysis_name TYPE string DEFAULT 'CUSTOM_ANALYSIS',
-      end_performance_analysis
-      RETURNING
-        VALUE(rs_results) TYPE zs_performance_results,
-      debug_with_conditions
-      IMPORTING
-        iv_condition TYPE string
-        iv_variable_name TYPE string
-        iv_expected_value TYPE any.
-        
-  PRIVATE SECTION.
-    DATA: mv_analysis_handle TYPE sat_perf_analysis_handle,
-          mv_start_time TYPE timestampl.
-ENDCLASS.
-
-CLASS zcl_advanced_debugger IMPLEMENTATION.
-  METHOD start_performance_analysis.
-    " Iniciar análisis de performance con SAT
-    GET TIME STAMP FIELD mv_start_time.
-    
-    " Configurar SAT para análisis automático
-    DATA(lo_sat) = cl_sat_analysis=>create( ).
-    lo_sat->set_analysis_name( iv_analysis_name ).
-    lo_sat->start_measurement( ).
-    
-    " Activar checkpoint groups específicos
-    CALL 'DEBUG_SET_CHECKPOINT_GROUP'
-      ID 'GROUP' FIELD 'ZPERFORMANCE'
-      ID 'ACTIVE' FIELD 'X'.
-      
-    " Log del inicio
-    cl_abap_trace_utils=>add_trace_entry(
-      i_category = 'PERFORMANCE'
-      i_text = |Analysis started: { iv_analysis_name }|
-      i_timestamp = mv_start_time ).
-  ENDMETHOD.
-  
-  METHOD end_performance_analysis.
-    " Finalizar análisis y obtener resultados
-    GET TIME STAMP FIELD DATA(lv_end_time).
-    
-    " Calcular tiempo transcurrido
-    rs_results-duration_ms = cl_abap_tstmp=>subtract(
-      tstmp1 = lv_end_time
-      tstmp2 = mv_start_time ) / 1000.
-      
-    " Obtener estadísticas de memoria
-    CALL 'GET_MEMORY_STATISTICS'
-      ID 'MAX_USED' FIELD rs_results-max_memory_kb
-      ID 'CURRENT' FIELD rs_results-current_memory_kb.
-      
-    " Obtener información de DB
-    rs_results-db_selects = sy-dbcnt.
-    
-    " Generar recomendaciones automáticas
-    IF rs_results-duration_ms > 5000.
-      APPEND 'Consider optimization - execution time > 5 seconds' TO rs_results-recommendations.
-    ENDIF.
-    
-    IF rs_results-db_selects > 100.
-      APPEND 'Too many DB accesses - consider FOR ALL ENTRIES' TO rs_results-recommendations.
-    ENDIF.
-    
-    " Log final
-    cl_abap_trace_utils=>add_trace_entry(
-      i_category = 'PERFORMANCE'
-      i_text = |Analysis completed. Duration: { rs_results-duration_ms }ms|
-      i_timestamp = lv_end_time ).
-  ENDMETHOD.
-  
-  METHOD debug_with_conditions.
-    " Dynamic breakpoint con condiciones complejas
-    DATA: lv_condition_met TYPE abap_bool.
-    
-    " Evaluar condición dinámicamente
-    CALL 'EVALUATE_EXPRESSION'
-      ID 'EXPRESSION' FIELD iv_condition
-      ID 'VARIABLE' FIELD iv_variable_name
-      ID 'VALUE' FIELD iv_expected_value
-      ID 'RESULT' FIELD lv_condition_met.
-      
-    IF lv_condition_met = abap_true.
-      " Capturar contexto antes del breakpoint
-      DATA(ls_context) = VALUE zs_debug_context(
-        program = sy-repid
-        line = sy-linno
-        user = sy-uname
-        timestamp = cl_abap_tstmp=>systemtstmp_syst2utc( sy-datum, sy-uzeit )
-        condition = iv_condition
-        variable_name = iv_variable_name
-      ).
-      
-      " Guardar contexto para análisis posterior
-      zcl_debug_logger=>log_context( ls_context ).
-      
-      " Activar breakpoint
-      BREAK-POINT.
-    ENDIF.
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["SAT Analysis", "Performance Debugging", "Dynamic Breakpoints", "Context Capture"],
-        developmentType: "optimizacion",
+        title: "Unit Testing framework",
+        description: "Prompt para crear framework de testing robusto",
+        prompt: `Crea Unit Testing framework completo para:
+- Módulo a testear: [MODULO_OBJETIVO]
+- Coverage requirements: [REQUISITOS_COBERTURA]
+- Test scenarios: [ESCENARIOS_TEST]
+- Mock objects needed: [OBJETOS_MOCK]
+- Test data management: [GESTION_DATOS_TEST]
+- Assertion strategies
+- Test fixture setup
+- Teardown procedures
+- Parameterized testing
+- Performance testing integration
+- Integration testing approach
+- Continuous testing pipeline
+- Test reporting
+- Coverage analysis
+- Mutation testing
+- Property-based testing
+- Contract testing
+- Test maintenance procedures
+- Documentation de tests`,
+        tags: ["Unit Testing", "Test Framework", "Coverage", "Automation"],
+        developmentType: "nuevo",
         complexity: "avanzado"
       },
       {
-        title: "Unit Testing con mocks",
-        description: "Framework de testing robusto para correctivos y validaciones",
-        code: `" Clase de test completa con mocks y validaciones
-CLASS ltcl_comprehensive_test DEFINITION FINAL
-  FOR TESTING
-  DURATION SHORT
-  RISK LEVEL HARMLESS.
-
-  PRIVATE SECTION.
-    DATA: mo_cut TYPE REF TO zcl_material_processor,
-          mo_mock_db TYPE REF TO zif_database_interface,
-          mo_mock_bapi TYPE REF TO zif_bapi_interface.
-    
-    METHODS: setup,
-             teardown,
-             test_material_creation_success,
-             test_material_creation_failure,
-             test_data_validation,
-             test_error_handling,
-             test_rollback_scenario.
-ENDCLASS.
-
-CLASS ltcl_comprehensive_test IMPLEMENTATION.
-  METHOD setup.
-    " Crear mocks para dependencias externas
-    mo_mock_db = cl_mockup_loader=>create_mock( 'ZIF_DATABASE_INTERFACE' ).
-    mo_mock_bapi = cl_mockup_loader=>create_mock( 'ZIF_BAPI_INTERFACE' ).
-    
-    " Inyectar dependencias en la clase bajo test
-    CREATE OBJECT mo_cut
-      EXPORTING
-        io_database = mo_mock_db
-        io_bapi = mo_mock_bapi.
-  ENDMETHOD.
-  
-  METHOD teardown.
-    " Limpiar recursos después de cada test
-    CLEAR: mo_cut, mo_mock_db, mo_mock_bapi.
-  ENDMETHOD.
-  
-  METHOD test_material_creation_success.
-    " Datos de prueba
-    DATA(ls_test_material) = VALUE zs_material_data(
-      material = 'TEST001'
-      material_type = 'FERT'
-      base_unit = 'EA'
-    ).
-    
-    " Configurar mock para retornar éxito
-    DATA(lt_success_return) = VALUE bapiret2_t(
-      ( type = 'S' message = 'Material created successfully' )
-    ).
-    
-    cl_mockup_loader=>configure_method_call(
-      io_mock = mo_mock_bapi
-      i_method_name = 'CREATE_MATERIAL'
-      i_return_value = lt_success_return ).
-    
-    " Ejecutar método bajo test
-    DATA(ls_result) = mo_cut->create_material( ls_test_material ).
-    
-    " Validaciones
-    cl_abap_unit_assert=>assert_true(
-      act = ls_result-success
-      msg = 'Material creation should succeed' ).
-      
-    cl_abap_unit_assert=>assert_equals(
-      act = ls_result-material_number
-      exp = 'TEST001'
-      msg = 'Material number should match input' ).
-      
-    " Verificar que el mock fue llamado correctamente
-    cl_mockup_loader=>verify_method_call(
-      io_mock = mo_mock_bapi
-      i_method_name = 'CREATE_MATERIAL'
-      i_times_called = 1 ).
-  ENDMETHOD.
-  
-  METHOD test_error_handling.
-    " Simular error en BAPI
-    DATA(lt_error_return) = VALUE bapiret2_t(
-      ( type = 'E' id = 'MATERIAL' number = '001' 
-        message = 'Material already exists' message_v1 = 'TEST001' )
-    ).
-    
-    cl_mockup_loader=>configure_method_call(
-      io_mock = mo_mock_bapi
-      i_method_name = 'CREATE_MATERIAL'
-      i_return_value = lt_error_return ).
-    
-    " Datos que causarán error
-    DATA(ls_duplicate_material) = VALUE zs_material_data(
-      material = 'TEST001'
-      material_type = 'FERT'
-    ).
-    
-    " Ejecutar y validar manejo de error
-    DATA(ls_result) = mo_cut->create_material( ls_duplicate_material ).
-    
-    cl_abap_unit_assert=>assert_false(
-      act = ls_result-success
-      msg = 'Creation should fail for duplicate material' ).
-      
-    cl_abap_unit_assert=>assert_not_initial(
-      act = ls_result-messages
-      msg = 'Error messages should be populated' ).
-  ENDMETHOD.
-  
-  METHOD test_rollback_scenario.
-    " Test que valida rollback en caso de error
-    " Configurar secuencia de llamadas
-    DATA(lt_partial_success) = VALUE bapiret2_t(
-      ( type = 'S' message = 'Header created' )
-      ( type = 'E' message = 'Client data error' )
-    ).
-    
-    " Configurar mock para simular rollback
-    cl_mockup_loader=>configure_method_sequence(
-      io_mock = mo_mock_bapi
-      it_method_calls = VALUE #(
-        ( method_name = 'CREATE_MATERIAL' return_value = lt_partial_success )
-        ( method_name = 'ROLLBACK_TRANSACTION' return_value = VALUE #( ) )
-      ) ).
-    
-    " Ejecutar test
-    DATA(ls_test_data) = VALUE zs_material_data( material = 'ROLLBACK_TEST' ).
-    DATA(ls_result) = mo_cut->create_material( ls_test_data ).
-    
-    " Validar que rollback fue ejecutado
-    cl_mockup_loader=>verify_method_call(
-      io_mock = mo_mock_bapi
-      i_method_name = 'ROLLBACK_TRANSACTION'
-      i_times_called = 1 ).
-  ENDMETHOD.
-ENDCLASS.`,
-        tags: ["Unit Testing", "Mocking", "Error Scenarios", "Rollback Testing"],
+        title: "Production debugging avanzado",
+        description: "Prompt para debugging en ambiente productivo",
+        prompt: `Implementa production debugging capabilities para:
+- Production issues: [ISSUES_PRODUCCION]
+- Business impact: [IMPACTO_NEGOCIO]
+- Available debugging windows: [VENTANAS_DEBUG]
+- Risk mitigation measures: [MEDIDAS_MITIGACION]
+- Non-intrusive debugging techniques
+- Log analysis automation
+- Performance monitoring integration
+- Real-time diagnostics
+- Remote debugging setup
+- Canary deployment testing
+- Feature flag implementation
+- Circuit breaker monitoring
+- Health check systems
+- Incident response procedures
+- Rollback strategies
+- Communication protocols
+- Post-incident analysis
+- Prevention measures implementation`,
+        tags: ["Production Debugging", "Incident Response", "Monitoring"],
         developmentType: "correctivo",
         complexity: "avanzado"
       }
@@ -1863,8 +1036,8 @@ function App() {
   const [selectedComplexity, setSelectedComplexity] = useState('');
   const [copiedCode, setCopiedCode] = useState('');
 
-  const copyToClipboard = (code, title) => {
-    navigator.clipboard.writeText(code);
+  const copyToClipboard = (prompt, title) => {
+    navigator.clipboard.writeText(prompt);
     setCopiedCode(title);
     setTimeout(() => setCopiedCode(''), 2000);
   };
@@ -1900,11 +1073,11 @@ function App() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">A</span>
+                <span className="text-white text-2xl font-bold">P</span>
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-800">ABAP Prompts Wiki</h1>
-                <p className="text-gray-600">Los mejores prompts para desarrollo ABAP moderno - {totalPrompts} prompts disponibles</p>
+                <p className="text-gray-600">Los mejores prompts optimizados para Copilot 365 y desarrollo ABAP - {totalPrompts} prompts disponibles</p>
               </div>
             </div>
           </div>
@@ -1912,6 +1085,18 @@ function App() {
       </header>
 
       <div className="container mx-auto px-6 py-8">
+        {/* Info Banner */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-6 mb-8">
+          <div className="flex items-center space-x-3 mb-2">
+            <span className="text-2xl">🤖</span>
+            <h2 className="text-xl font-bold">Prompts optimizados para Copilot 365</h2>
+          </div>
+          <p className="text-blue-100">
+            Cada prompt está diseñado para copiar y pegar directamente en Copilot 365, GitHub Copilot, o cualquier IA. 
+            Solo reemplaza los valores entre [CORCHETES] con tus datos específicos.
+          </p>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <div className="lg:w-1/4">
@@ -2086,28 +1271,37 @@ function App() {
                             </div>
                           </div>
                           <button
-                            onClick={() => copyToClipboard(prompt.code, prompt.title)}
+                            onClick={() => copyToClipboard(prompt.prompt, prompt.title)}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2 ml-4"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
-                            <span>{copiedCode === prompt.title ? '¡Copiado!' : 'Copiar'}</span>
+                            <span>{copiedCode === prompt.title ? '¡Copiado!' : 'Copiar Prompt'}</span>
                           </button>
                         </div>
                         
                         <div className="bg-gray-900 rounded-lg overflow-hidden">
                           <div className="bg-gray-800 px-4 py-2 flex items-center justify-between">
-                            <span className="text-gray-300 text-sm font-medium">ABAP Code</span>
+                            <span className="text-gray-300 text-sm font-medium flex items-center space-x-2">
+                              <span>🤖</span>
+                              <span>Prompt para Copilot 365</span>
+                            </span>
                             <div className="flex space-x-2">
                               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                             </div>
                           </div>
-                          <pre className="p-4 text-sm text-green-400 font-mono overflow-x-auto">
-                            <code>{prompt.code}</code>
+                          <pre className="p-4 text-sm text-green-400 font-mono overflow-x-auto whitespace-pre-wrap">
+                            <code>{prompt.prompt}</code>
                           </pre>
+                        </div>
+                        
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            <span className="font-semibold">💡 Tip:</span> Reemplaza los valores entre [CORCHETES] con tus datos específicos antes de usar en Copilot 365.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -2145,9 +1339,9 @@ function App() {
       {/* Footer */}
       <footer className="bg-gray-800 text-white py-8 mt-16">
         <div className="container mx-auto px-6 text-center">
-          <p className="text-gray-400">© 2025 ABAP Prompts Wiki - Los mejores recursos para desarrollo ABAP moderno</p>
+          <p className="text-gray-400">© 2025 ABAP Prompts Wiki - Los mejores prompts optimizados para Copilot 365</p>
           <p className="text-gray-500 text-sm mt-2">
-            Incluye: CDS Views, SAP RAP, OData, Workflow, AMDP y técnicas de optimización
+            🤖 Cada prompt está diseñado para generar código ABAP de alta calidad usando IA
           </p>
         </div>
       </footer>
